@@ -779,19 +779,20 @@ function takeMorto(pKey, isDirecto) {
     gameState.discardPile.push(t);
     addLog(`זרקת ${Utils.getTileName(t)}.`, "user");
 
-    // בדיקות מורטו וניצחון
-    if (p.hand.length === 0 && !p.mortoTaken) {
-        p.mortoTaken = true;
-        for (let i = 0; i < 11; i++) {
-            if (gameState.deck.length > 0) p.hand.push(gameState.deck.pop());
-        }
-        showCelebration("מורטו! 🃏", "#4fc3f7"); 
-        addLog("לקחת מורטו! התור עובר.", "system");
-    } else if (p.hand.length === 0 && p.mortoTaken && p.table.some(m => m.length >= 7)) {
-        checkGameOver('user');
-        return;
+   // בדיקות מורטו וניצחון - בדוק לניצחון קודם
+if (p.hand.length === 0 && p.mortoTaken && p.table.some(m => m.length >= 7)) {
+    // השחקן סיים את המורטו שלו והוא בעל קנסטה - הוא ניצח!
+    checkGameOver('user');
+    return;
+} else if (p.hand.length === 0 && !p.mortoTaken) {
+    // השחקן ריקן את היד אבל עדיין לא לקח את המורטו
+    p.mortoTaken = true;
+    for (let i = 0; i < 11; i++) {
+        if (gameState.deck.length > 0) p.hand.push(gameState.deck.pop());
     }
-
+    showCelebration("מורטו! 🃏", "#4fc3f7"); 
+    addLog("לקחת מורטו! התור עובר.", "system");
+}
     // איפוס משתני תור והעברת תור
     gameState.currentTurnMelds = [];
     gameState.originalHandBeforeMeld = null;
