@@ -6,7 +6,23 @@
     <title>קנסטה</title>
     <style>
         :root { --tile-bg: #fdf5e6; --blue: #007bff; --red: #dc3545; --black: #333; --orange: #ff8c00; --gold: #ffee58; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a4a1d; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    background-color: #1a4a1d; 
+    color: white; 
+    margin: 0; 
+    display: flex; 
+    height: 100vh; 
+    overflow: hidden; 
+    /* הוסף את השורה הזו למעבר חלק */
+    transition: background-color 0.8s ease; 
+}
+
+/* הוסף את המחלקה הזו מתחת ל-body */
+body.opponent-turn {
+    background-color: #2c3e50; /* כחול-כהה כשהתור של היריב */
+    background-image: none;
+}
         
         /* תפריט ראשי *//* עיצוב משודרג לתפריט הראשי */
 #main-menu { 
@@ -184,7 +200,31 @@
     z-index: 10000;
     white-space: nowrap; /* מונע מהטקסט להישבר */
 }
-
+/* התאמות למובייל */
+@media (max-width: 768px) {
+    #game-container { 
+        grid-template-columns: 1fr !important; 
+        grid-template-rows: auto 1fr auto !important;
+        height: 100vh; 
+        overflow-y: auto; 
+    }
+    #side-bar { 
+        width: 100% !important; 
+        height: 150px !important; 
+        order: 10; /* מעביר את הלוג לתחתית */
+    }
+    .tile { 
+        width: 42px !important; 
+        height: 60px !important; 
+        font-size: 1.1rem !important; 
+    }
+    .status-bar { 
+        flex-direction: column; 
+        gap: 5px; 
+        padding: 8px !important;
+    }
+    #game-area { padding: 5px !important; }
+}
 #discard-area .tile {
     position: absolute;
     right: 10px; /* נקודת התחלה מימין */
@@ -367,6 +407,7 @@
     		<button class="btn" id="meld-btn" onclick="createNewMeld()">הורד סדרה</button>
     		<button class="btn" id="reset-btn" style="background:#ff9800; color:white" onclick="resetTurnMelds()">חזור לתחילת התור</button> 
     		<button class="btn" id="finish-btn" onclick="finishTurn()">זרוק קלף</button>
+    		<button class="btn" id="manual-finish-btn" style="background:#dc3545; color:white" onclick="endGameManually()">סיים משחק</button>
 	    </div>
     </div>
 </div>
@@ -822,6 +863,13 @@ if (p.hand.length === 0 && p.mortoTaken && p.table.some(m => m.length >= 7)) {
             render();
         }
     }
+    function endGameManually() {
+    if (confirm("האם אתה בטוח שברצונך לסיים את המשחק ולחשב ניקוד עכשיו?")) {
+        addLog("המשחק הופסק ידנית על ידי השחקן.", "system");
+        // קורא לפונקציה הקיימת שלך שמציגה את מסך הניצחון/הפסד
+        checkGameOver(gameState.turn === 'user' ? 'comp' : 'user'); 
+    }
+}
 
  function render() {
     // 1. הגנה: בדיקה שהאלמנטים הבסיסיים קיימים ב-DOM
@@ -840,6 +888,12 @@ if (p.hand.length === 0 && p.mortoTaken && p.table.some(m => m.length >= 7)) {
     
     // 2. עדכון כותרת היריב
     const compHeader = document.querySelector('.section h4');
+    
+    if (gameState.turn === 'user') {
+        document.body.classList.remove('opponent-turn');
+    } else {
+        document.body.classList.add('opponent-turn');
+    }
     if (compHeader) {
         compHeader.innerText = isOnline ? `הורדות של היריב (${c.hand.length} קלפים)` : `הורדות מחשב (${c.hand.length} קלפים)`;
     }
@@ -1454,6 +1508,9 @@ function showCelebration(text, color = "var(--gold)") {
 // יצירת חדר חדש
 function createOnlineRoom() {
     const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+    // --- הקוד החדש שביקשת ---
+    alert("מספר החדר " + roomId + ", שלח לשחקן השני");
+    
     currentRoomId = roomId;
     myRole = 'player1';
     isOnline = true;
