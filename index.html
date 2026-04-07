@@ -607,7 +607,7 @@ body.opponent-turn {
     initGame();
 }
 
-  function initGame() {
+ function initGame() {
     gameState.deck = [];
     for(let i=0; i<2; i++) {
         Object.keys(COLORS).forEach(c => { 
@@ -617,28 +617,24 @@ body.opponent-turn {
     }
     gameState.deck.sort(() => Math.random() - 0.5);
 
+    // חלוקת קלפים
     gameState.players.user.hand = gameState.deck.splice(-11);
     gameState.players.comp.hand = gameState.deck.splice(-11);
     
     // קלף ראשון פתוח בערימה
     gameState.discardPile = [gameState.deck.pop()]; 
     
-    // תיקון השגיאה: שימוש ב-gameState.turn במקום starts הלא קיים
     if (isOnline) {
-        gameState.turn = 'user'; // בחדר חדש, היוצר (player1) תמיד מתחיל
+        // באונליין: שחקן 1 תמיד מתחיל, ושחקן 2 מחכה לסנכרון
+        gameState.turn = 'user'; 
+        gameState.hasDrawn = false;
+        if (myRole === 'player1') {
+            syncToCloud(); // שחקן 1 מעלה את הלוח המוכר לענן
+        }
     } else {
         gameState.turn = Math.random() < 0.5 ? 'user' : 'comp';
-    }
-    
-    gameState.hasDrawn = false;
-
-    addLog(`המשחק התחיל! קלף פתיחה: ${Utils.getTileName(gameState.discardPile[0])}`, "system");
-    
-    if (gameState.turn === 'user') {
-        addLog("תורך! ממתין שתמשוך קלף מהקופה או מהערימה.", "system");
-    } else {
-        addLog("תור המחשב מתחיל...", "system");
-        setTimeout(compAI, 1500); 
+        gameState.hasDrawn = false;
+        if (gameState.turn === 'comp') setTimeout(compAI, 1500);
     }
 
     render();
@@ -1612,7 +1608,7 @@ function confirmRoomCreation() {
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('game-container').style.display = 'grid';
 
-    // 3. אתחול המשחק
+    // 3. אתחול המשחק (ערבוב, חלוקת 11 קלפים לכל אחד וקלף פתוח)
     initGame(); 
 
     // 4. עדכון מספר החדר בתצוגה
@@ -1621,6 +1617,12 @@ function confirmRoomCreation() {
 
     addLog(`החדר נוצר! מספר החדר: ${currentRoomId}`, "system");
     addLog("מחכה להצטרפות השחקן השני...", "system");
+    
+    // --- השורה החשובה ביותר לאונליין ---
+    // אנחנו שולחים את הלוח ששחקן 1 הרגע יצר לענן
+    if (isOnline) {
+        syncToCloud();
+    }
     
     render();
 }
@@ -1685,35 +1687,23 @@ function listenToRoom(roomId) {
         }
 
         // 2. עדכון נתוני המשחק עצמם
+        // 2. עדכון נתוני המשחק עצמם
         if (!data.gameState) return;
         const remoteGS = data.gameState;
 
-        // מיפוי נכון של השחקנים לפי התפקיד (שחקן 1 מול שחקן 2)
-        // מיפוי נכון של השחקנים לפי התפקיד (שחקן 1 מול שחקן 2)
         if (myRole === 'player1') {
-            // שחקן 1 מעדכן ישירות מהשדות התואמים בענן
-            gameState.players.user.hand = remoteGS.players.user.hand || [];
-            gameState.players.user.table = remoteGS.players.user.table || [];
-            gameState.players.user.downed = remoteGS.players.user.downed || false;
-            gameState.players.user.mortoTaken = remoteGS.players.user.mortoTaken || false;
-
-            gameState.players.comp.hand = remoteGS.players.comp.hand || [];
-            gameState.players.comp.table = remoteGS.players.comp.table || [];
-            
+            // אני שחקן 1 - המידע שלי נמצא ב-user של הענן
+            gameState.players.user = remoteGS.players.user || gameState.players.user;
+            gameState.players.comp = remoteGS.players.comp || gameState.players.comp;
             gameState.turn = (remoteGS.turn === 'player1') ? 'user' : 'comp';
         } else {
-            // שחקן 2 רואה את 'comp' מהענן בתור ה-'user' שלו
-            gameState.players.user.hand = remoteGS.players.comp.hand || [];
-            gameState.players.user.table = remoteGS.players.comp.table || [];
-            gameState.players.user.downed = remoteGS.players.comp.downed || false;
-            gameState.players.user.mortoTaken = remoteGS.players.comp.mortoTaken || false;
-
-            gameState.players.comp.hand = remoteGS.players.user.hand || [];
-            gameState.players.comp.table = remoteGS.players.user.table || [];
-            
+            // אני שחקן 2 - המידע שלי נמצא ב-comp של הענן!
+            gameState.players.user = remoteGS.players.comp || gameState.players.user;
+            gameState.players.comp = remoteGS.players.user || gameState.players.comp;
             gameState.turn = (remoteGS.turn === 'player2') ? 'user' : 'comp';
         }
-        // עדכון נתונים גלובליים
+
+        // עדכון נתונים כלליים
         gameState.deck = remoteGS.deck || [];
         gameState.discardPile = remoteGS.discardPile || [];
         gameState.hasDrawn = remoteGS.hasDrawn || false;
