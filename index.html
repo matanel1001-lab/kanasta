@@ -2,8 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>קנסטה רמיקוב</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=1.0, user-scalable=no">    <title>קנסטה רמיקוב</title>
     <style>
         :root { --tile-bg: #fdf5e6; --blue: #007bff; --red: #dc3545; --black: #333; --orange: #ff8c00; --gold: #ffee58; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a4a1d; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
@@ -1515,24 +1514,34 @@ function showCelebration(text, color = "var(--gold)") {
 function copyRoomNumber() {
     const roomNum = document.getElementById('modal-room-number').innerText;
     
-    // שימוש ב-API של הדפדפן להעתקה ללוח (Clipboard)
-    navigator.clipboard.writeText(roomNum).then(() => {
-        // שינוי זמני של הטקסט בכפתור כדי לתת אישור למשתמש
-        const copyBtn = event.target;
-        const originalText = copyBtn.innerText;
-        copyBtn.innerText = "✅ הועתק!";
-        copyBtn.style.color = "#4caf50";
-        
-        setTimeout(() => {
-            copyBtn.innerText = originalText;
-            copyBtn.style.color = "white";
-        }, 2000);
-    }).catch(err => {
-        console.error('שגיאה בהעתקה: ', err);
-        alert("לא הצלחנו להעתיק אוטומטית. המספר הוא: " + roomNum);
-    });
+    // יצירת אלמנט זמני נסתר לצורך העתקה
+    const tempInput = document.createElement("input");
+    tempInput.value = roomNum;
+    document.body.appendChild(tempInput);
+    
+    // בחירה והעתקה (השיטה שעובדת הכי טוב בניידים)
+    tempInput.select();
+    tempInput.setSelectionRange(0, 99999); // תמיכה במובייל
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            // עדכון ויזואלי לכפתור
+            const copyBtn = event.target;
+            const originalText = copyBtn.innerText;
+            copyBtn.innerText = "✅ הועתק!";
+            setTimeout(() => { copyBtn.innerText = originalText; }, 2000);
+        } else {
+            throw new Error('Not successful');
+        }
+    } catch (err) {
+        // אם בכל זאת נכשל, נשאיר את ה-Alert שהיה לך כגיבוי אחרון
+        alert("המספר הוא: " + roomNum);
+    }
+    
+    // הסרת האלמנט הזמני
+    document.body.removeChild(tempInput);
 }
-
 function createOnlineRoom() {
     const roomId = Math.floor(1000 + Math.random() * 9000).toString();
     currentRoomId = roomId;
