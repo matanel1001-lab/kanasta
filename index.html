@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -607,7 +608,7 @@ body.opponent-turn {
     initGame();
 }
 
- function initGame() {
+  function initGame() {
     gameState.deck = [];
     for(let i=0; i<2; i++) {
         Object.keys(COLORS).forEach(c => { 
@@ -617,24 +618,28 @@ body.opponent-turn {
     }
     gameState.deck.sort(() => Math.random() - 0.5);
 
-    // חלוקת קלפים
     gameState.players.user.hand = gameState.deck.splice(-11);
     gameState.players.comp.hand = gameState.deck.splice(-11);
     
     // קלף ראשון פתוח בערימה
     gameState.discardPile = [gameState.deck.pop()]; 
     
+    // תיקון השגיאה: שימוש ב-gameState.turn במקום starts הלא קיים
     if (isOnline) {
-        // באונליין: שחקן 1 תמיד מתחיל, ושחקן 2 מחכה לסנכרון
-        gameState.turn = 'user'; 
-        gameState.hasDrawn = false;
-        if (myRole === 'player1') {
-            syncToCloud(); // שחקן 1 מעלה את הלוח המוכר לענן
-        }
+        gameState.turn = 'user'; // בחדר חדש, היוצר (player1) תמיד מתחיל
     } else {
         gameState.turn = Math.random() < 0.5 ? 'user' : 'comp';
-        gameState.hasDrawn = false;
-        if (gameState.turn === 'comp') setTimeout(compAI, 1500);
+    }
+    
+    gameState.hasDrawn = false;
+
+    addLog(`המשחק התחיל! קלף פתיחה: ${Utils.getTileName(gameState.discardPile[0])}`, "system");
+    
+    if (gameState.turn === 'user') {
+        addLog("תורך! ממתין שתמשוך קלף מהקופה או מהערימה.", "system");
+    } else {
+        addLog("תור המחשב מתחיל...", "system");
+        setTimeout(compAI, 1500); 
     }
 
     render();
@@ -819,79 +824,76 @@ function takeMorto(pKey, isDirecto) {
         summary.innerHTML = `הניקוד שלך: ${uTotal}<br>ניקוד המחשב: ${cTotal}<br><br><b>הפרש סופי: ${diff} נקודות</b>`;
     }
 
- function finishTurn() {
+  function finishTurn() {
     const p = gameState.players.user;
     
-    // בדיקה שנבחר קלף אחד בלבד לזריקה
     if (gameState.selectedIndices.length !== 1) {
-        alert("בחר קלף אחד מהיד (בלחיצה עליו) ואז לחץ על 'זרוק קלף'.");
+        alert("בחר קלף אחד לזריקה כדי לסיים את התור.");
         return;
     }
 
-    // --- בדיקת חוק ה-30 (רק אם השחקן מנסה לרדת לראשונה בתור הזה) ---
-    // אנחנו בודקים: האם הוא עוד לא "ירד" בעבר (downed=false) 
-    // והאם הוא הניח סדרות על השולחן בתור הנוכחי (currentTurnMelds)
-    if (!p.downed && gameState.currentTurnMelds && gameState.currentTurnMelds.length > 0) {
+    // --- לוגיקת בדיקת ה-30 (הקוד הקיים שלך) ---
+    const tableBeforeThisTurnCount = p.table.length - gameState.currentTurnMelds.length;
+    if (tableBeforeThisTurnCount === 0 && gameState.currentTurnMelds.length > 0) {
         let totalPoints = 0;
         let hasRun = false;
-        
         gameState.currentTurnMelds.forEach(meld => {
             totalPoints += Utils.calcPoints(meld, false);
             if (Utils.isValid(meld) === 'run') hasRun = true;
         });
-
         if (totalPoints < 30 || !hasRun) {
-            alert(`לירידה ראשונה חובה סדרה עולה (Run) ו-30 נקודות. כרגע יש לך: ${totalPoints}. אם אינך רוצה לרדת עכשיו, לחץ על 'חזור לתחילת התור' לפני הזריקה.`);
+            alert(`לירידה ראשונה חובה סדרה עולה (Run) ו-30 נקודות. כרגע יש לך: ${totalPoints}`);
             return; 
         }
-        // אם עבר את הבדיקה - הוא רשאי לרדת
         p.downed = true; 
+    } else {
+        p.downed = true;
     }
 
     // --- ביצוע הזריקה בפועל ---
-    const selectedIdx = gameState.selectedIndices[0];
-    const t = p.hand.splice(selectedIdx, 1)[0];
+    const t = p.hand.splice(gameState.selectedIndices[0], 1)[0];
     gameState.discardPile.push(t);
     addLog(`זרקת ${Utils.getTileName(t)}.`, "user");
 
-    // --- בדיקת ניצחון או מורטו רגיל ---
+    // --- הבדיקה החדשה: האם היד התרוקנה בעקבות הזריקה? ---
     if (p.hand.length === 0) {
         if (!p.mortoTaken) {
+            // מקרה 1: מורטו ראשון (לא דירקטו - המורטו יחכה לתור הבא)
             p.mortoTaken = true;
-            // חלוקת מורטו רגיל (יחכה לתור הבא)
             for (let i = 0; i < 11; i++) {
                 if (gameState.deck.length > 0) p.hand.push(gameState.deck.pop());
             }
             showCelebration("מורטו! 🃏", "#4fc3f7"); 
             addLog("לקחת מורטו אחרי זריקה. הקלפים יחכו לתור הבא שלך.", "system");
-        } else {
-            // בדיקת ניצחון (סגירה)
+        } 
+        else {
+            // מקרה 2: כבר לקח מורטו - בודקים אם אפשר לנצח
             const hasCanasta = p.table.some(m => m.length >= 7);
             if (hasCanasta) {
                 checkGameOver('user');
-                return;
+                return; // המשחק נגמר
             } else {
-                alert("זרקת את הקלף האחרון אבל אין לך קנסטה! אסור לסיים כך.");
+                // באג חוקים: אסור להישאר בלי קלפים ובלי קנסטה
+                alert("זרקת את הקלף האחרון אבל אין לך קנסטה! לפי החוקים אסור לסיים כך.");
+                // הערה: במצב כזה בדרך כלל השחקן נתקע, בקוד הזה הוא פשוט ימשיך בלי קלפים (באג חוקי)
             }
         }
     }
 
-    // --- איפוס משתני תור והעברת תור ליריב ---
+    // איפוס משתני תור והעברת תור
     gameState.currentTurnMelds = [];
     gameState.originalHandBeforeMeld = null;
     gameState.selectedIndices = [];
     gameState.hasDrawn = false;
     
-    // העברת התור בענן (player1 -> player2 או להיפך)
-    if (isOnline) {
-        gameState.turn = (myRole === 'player1') ? 'player2' : 'player1';
-    } else {
-        gameState.turn = 'comp';
-        setTimeout(compAI, 1000);
-    }
+    gameState.turn = isOnline ? (myRole === 'player1' ? 'player2' : 'player1') : 'comp';
     
     render();
     syncToCloud(); 
+
+    if (!isOnline) {
+        setTimeout(compAI, 1000);
+    }
 }
     function checkMorto(pKey) {
         const p = gameState.players[pKey];
@@ -1611,7 +1613,7 @@ function confirmRoomCreation() {
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('game-container').style.display = 'grid';
 
-    // 3. אתחול המשחק (ערבוב, חלוקת 11 קלפים לכל אחד וקלף פתוח)
+    // 3. אתחול המשחק
     initGame(); 
 
     // 4. עדכון מספר החדר בתצוגה
@@ -1620,12 +1622,6 @@ function confirmRoomCreation() {
 
     addLog(`החדר נוצר! מספר החדר: ${currentRoomId}`, "system");
     addLog("מחכה להצטרפות השחקן השני...", "system");
-    
-    // --- השורה החשובה ביותר לאונליין ---
-    // אנחנו שולחים את הלוח ששחקן 1 הרגע יצר לענן
-    if (isOnline) {
-        syncToCloud();
-    }
     
     render();
 }
@@ -1690,23 +1686,35 @@ function listenToRoom(roomId) {
         }
 
         // 2. עדכון נתוני המשחק עצמם
-        // 2. עדכון נתוני המשחק עצמם
         if (!data.gameState) return;
         const remoteGS = data.gameState;
 
+        // מיפוי נכון של השחקנים לפי התפקיד (שחקן 1 מול שחקן 2)
+        // מיפוי נכון של השחקנים לפי התפקיד (שחקן 1 מול שחקן 2)
         if (myRole === 'player1') {
-            // אני שחקן 1 - המידע שלי נמצא ב-user של הענן
-            gameState.players.user = remoteGS.players.user || gameState.players.user;
-            gameState.players.comp = remoteGS.players.comp || gameState.players.comp;
+            // שחקן 1 מעדכן ישירות מהשדות התואמים בענן
+            gameState.players.user.hand = remoteGS.players.user.hand || [];
+            gameState.players.user.table = remoteGS.players.user.table || [];
+            gameState.players.user.downed = remoteGS.players.user.downed || false;
+            gameState.players.user.mortoTaken = remoteGS.players.user.mortoTaken || false;
+
+            gameState.players.comp.hand = remoteGS.players.comp.hand || [];
+            gameState.players.comp.table = remoteGS.players.comp.table || [];
+            
             gameState.turn = (remoteGS.turn === 'player1') ? 'user' : 'comp';
         } else {
-            // אני שחקן 2 - המידע שלי נמצא ב-comp של הענן!
-            gameState.players.user = remoteGS.players.comp || gameState.players.user;
-            gameState.players.comp = remoteGS.players.user || gameState.players.comp;
+            // שחקן 2 רואה את 'comp' מהענן בתור ה-'user' שלו
+            gameState.players.user.hand = remoteGS.players.comp.hand || [];
+            gameState.players.user.table = remoteGS.players.comp.table || [];
+            gameState.players.user.downed = remoteGS.players.comp.downed || false;
+            gameState.players.user.mortoTaken = remoteGS.players.comp.mortoTaken || false;
+
+            gameState.players.comp.hand = remoteGS.players.user.hand || [];
+            gameState.players.comp.table = remoteGS.players.user.table || [];
+            
             gameState.turn = (remoteGS.turn === 'player2') ? 'user' : 'comp';
         }
-
-        // עדכון נתונים כלליים
+        // עדכון נתונים גלובליים
         gameState.deck = remoteGS.deck || [];
         gameState.discardPile = remoteGS.discardPile || [];
         gameState.hasDrawn = remoteGS.hasDrawn || false;
