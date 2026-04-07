@@ -1,27 +1,12 @@
-
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>קנסטה רמיקוב</title>
+    <title>קנסטה</title>
     <style>
         :root { --tile-bg: #fdf5e6; --blue: #007bff; --red: #dc3545; --black: #333; --orange: #ff8c00; --gold: #ffee58; }
-        body { 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    background-color: #1a4a1d; /* ירוק מקורי */
-    color: white; 
-    margin: 0; 
-    display: flex; 
-    height: 100vh; 
-    overflow: hidden; 
-    transition: background-color 0.8s ease; /* מעבר חלק ונעים בין הצבעים */
-}
-
-body.opponent-turn {
-    background-color: #2c3e50; /* כחול-כהה רגוע */
-    background-image: none;    /* מבטל את הגראדיאנט הירוק אם קיים */
-}
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a4a1d; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
         /* תפריט ראשי *//* עיצוב משודרג לתפריט הראשי */
 #main-menu { 
@@ -176,7 +161,7 @@ body.opponent-turn {
         
         .tile { display: inline-flex; flex-direction: column; justify-content: center; align-items: center; width: 36px; height: 52px; background: var(--tile-bg); border-radius: 5px; margin: 2px; color: black; font-weight: bold; box-shadow: 1px 2px 3px rgba(0,0,0,0.4); cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
         .tile.red { color: var(--red); } .tile.blue { color: var(--blue); } .tile.black { color: var(--black); } .tile.orange { color: var(--orange); }
-        .tile.joker { color: #7b1fa2;}
+        .tile.joker { color: #7b1fa2; font-size: 0.7rem; }
         .tile.selected { border-color: var(--gold); transform: translateY(-8px); }
         .tile.back { background: #333; color: transparent; }
         
@@ -204,46 +189,6 @@ body.opponent-turn {
     position: absolute;
     right: 10px; /* נקודת התחלה מימין */
     transition: all 0.2s;
-}
-
-/* התאמות למובייל */
-@media (max-width: 768px) {
-    #game-container {
-        grid-template-columns: 1fr; /* ביטול העמודות - הלוג עובר למעלה/למטה */
-        height: auto;
-        overflow-y: auto;
-    }
-
-    #side-bar {
-        width: 100%;
-        height: 150px; /* צמצום הלוג כדי שלא יתפוס את כל המסך */
-        order: 10; /* מעביר את הלוג לתחתית המשחק */
-    }
-
-    .tile {
-        width: 45px; /* הגדלת הקלפים למגע אצבע */
-        height: 65px;
-        font-size: 1.2rem;
-    }
-
-    .menu-card h1 {
-        font-size: 2rem; /* הקטנת הכותרת בתפריט שלא תגלוש */
-    }
-
-    .status-bar {
-        flex-direction: column; /* סידור נתוני השחקנים אחד מתחת לשני */
-        gap: 5px;
-        font-size: 0.9rem;
-    }
-
-    .btn {
-        padding: 15px 10px; /* כפתורים גדולים יותר שיהיה קל ללחוץ */
-        font-size: 1rem;
-    }
-    
-    #game-area {
-        padding: 5px;
-    }
 }
         
         .btn { background: #fff; color: #1a4a1d; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; transition: 0.2s; }
@@ -375,31 +320,7 @@ body.opponent-turn {
         <button class="btn" style="margin-top:20px" onclick="toggleModal('leaderboard-modal', false)">סגור</button>
     </div>
 </div>
-<div id="room-created-modal" class="custom-modal">
-    <div class="modal-content menu-card">
-        <h2 style="color: var(--gold);">🎊 חדר חדש נפתח!</h2>
-        <p>מספר החדר שלך הוא:</p>
-        
-        <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0;">
-            <div id="modal-room-number" style="font-size: 3.5rem; font-weight: 900; color: var(--gold);">----</div>
-            <button class="btn" onclick="copyRoomNumber()" title="העתק מספר" style="padding: 10px; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--gold);">
-                📋 העתק
-            </button>
-        </div>
 
-        <p style="color: rgba(255,255,255,0.8);">שלח את המספר הזה לשחקן השני כדי שיוכל להצטרף אליך.</p>
-        <button class="btn-main" style="width: 100%; margin-top: 20px; font-size: 1.2rem;" onclick="confirmRoomCreation()">הבנתי, בואו נתחיל!</button>
-    </div>
-</div>
-<div id="aviel-modal" class="custom-modal">
-    <div class="modal-content menu-card" style="border-color: #ff5252 !important;">
-        <h2 style="color: #ff5252;">הודעה מערכת חשובה ⚠️</h2>
-        <p id="aviel-msg-text" style="font-size: 1.5rem; margin: 20px 0;"></p>
-        <button class="btn-main" style="background: #4fc3f7; width: 100%;" onclick="toggleModal('aviel-modal', false)">
-            מצחיק מאוד מתנאל, תן לי לשחק
-        </button>
-    </div>
-</div>
 <div id="game-container">
     <div id="side-bar">
         <div style="padding:15px; background:#222; text-align:center; color:gold; font-weight:bold;">לוג משחק</div>
@@ -446,8 +367,7 @@ body.opponent-turn {
     		<button class="btn" id="meld-btn" onclick="createNewMeld()">הורד סדרה</button>
     		<button class="btn" id="reset-btn" style="background:#ff9800; color:white" onclick="resetTurnMelds()">חזור לתחילת התור</button> 
     		<button class="btn" id="finish-btn" onclick="finishTurn()">זרוק קלף</button>
-    		<button class="btn" style="background:#f44336; color:white; margin-top:10px;" onclick="quitGame()">🚪 צא מהמשחק</button>
-		</div>
+	    </div>
     </div>
 </div>
 <div id="game-toast" style="display: none; position: fixed; top: 25%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; pointer-events: none;">
@@ -598,14 +518,18 @@ body.opponent-turn {
     const finalName = nameInput || "שחקן 1";
     
     document.getElementById('p-name').innerText = finalName;
-    if (finalName === "אביאל") {
-        document.getElementById('aviel-msg-text').innerText = "למה אתה משחק קנסטה? אהה כי אין סקי אוי אוי🎿";
-        toggleModal('aviel-modal', true);
-        // אנחנו לא עוצרים את המשחק, רק מראים את החלון מעל
-    }
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('game-container').style.display = 'grid';
+    
+    // אתחול המשחק
     initGame();
+
+    // הבדיקה המיוחדת עבור אביאל
+    if (finalName === "אביאל") {
+        setTimeout(() => {
+            showCelebration("למה אתה משחק קנסטה? אהה כי אין סקי אוי אוי🎿", "#ff5252");
+        }, 1500);
+    }
 }
 
   function initGame() {
@@ -711,15 +635,10 @@ function takeDiscardPile() {
     addLog(`הורדת סדרה זמנית: ${type === 'run' ? 'סדרה עולה' : 'סט'}.`, "user");
 
     // בדיקת מורטו דירקטו (היד התרוקנה כתוצאה מהורדה)
-    if (p.hand.length === 0) {
-        if (!p.mortoTaken) {
-            takeMorto('user', true); // מורטו ראשון - ממשיך לשחק
-        } else {
-            // כבר לקח מורטו והיד התרוקנה - לפי החוק שביקשת, הוא חייב לזרוק קלף כדי לנצח
-            // אז אנחנו פשוט מוסיפים לוג ולא נותנים לו מורטו נוסף
-            addLog("היד ריקה! זרוק את הקלף האחרון מהסדרה כדי לנצח.", "system");
-        }
+    if (p.hand.length === 0 && !p.mortoTaken) {
+        takeMorto('user', true); 
     }
+
     render();
     syncToCloud();
 }
@@ -824,7 +743,7 @@ function takeMorto(pKey, isDirecto) {
         summary.innerHTML = `הניקוד שלך: ${uTotal}<br>ניקוד המחשב: ${cTotal}<br><br><b>הפרש סופי: ${diff} נקודות</b>`;
     }
 
-  function finishTurn() {
+   function finishTurn() {
     const p = gameState.players.user;
     
     if (gameState.selectedIndices.length !== 1) {
@@ -832,52 +751,45 @@ function takeMorto(pKey, isDirecto) {
         return;
     }
 
-    // --- לוגיקת בדיקת ה-30 (הקוד הקיים שלך) ---
+    // תיקון לוגי: בודקים תנאי ירידה ראשונה רק אם השולחן היה ריק לפני התור הזה
+    // אנחנו בודקים את אורך השולחן פחות הסדרות שהורדו בתור הנוכחי
     const tableBeforeThisTurnCount = p.table.length - gameState.currentTurnMelds.length;
+
     if (tableBeforeThisTurnCount === 0 && gameState.currentTurnMelds.length > 0) {
         let totalPoints = 0;
         let hasRun = false;
+        
         gameState.currentTurnMelds.forEach(meld => {
             totalPoints += Utils.calcPoints(meld, false);
             if (Utils.isValid(meld) === 'run') hasRun = true;
         });
+
         if (totalPoints < 30 || !hasRun) {
             alert(`לירידה ראשונה חובה סדרה עולה (Run) ו-30 נקודות. כרגע יש לך: ${totalPoints}`);
             return; 
         }
         p.downed = true; 
     } else {
+        // אם כבר היו סדרות על השולחן, אנחנו מוודאים ש-downed מסומן כ-true
         p.downed = true;
     }
 
-    // --- ביצוע הזריקה בפועל ---
+    // ביצוע הזריקה
     const t = p.hand.splice(gameState.selectedIndices[0], 1)[0];
     gameState.discardPile.push(t);
     addLog(`זרקת ${Utils.getTileName(t)}.`, "user");
 
-    // --- הבדיקה החדשה: האם היד התרוקנה בעקבות הזריקה? ---
-    if (p.hand.length === 0) {
-        if (!p.mortoTaken) {
-            // מקרה 1: מורטו ראשון (לא דירקטו - המורטו יחכה לתור הבא)
-            p.mortoTaken = true;
-            for (let i = 0; i < 11; i++) {
-                if (gameState.deck.length > 0) p.hand.push(gameState.deck.pop());
-            }
-            showCelebration("מורטו! 🃏", "#4fc3f7"); 
-            addLog("לקחת מורטו אחרי זריקה. הקלפים יחכו לתור הבא שלך.", "system");
-        } 
-        else {
-            // מקרה 2: כבר לקח מורטו - בודקים אם אפשר לנצח
-            const hasCanasta = p.table.some(m => m.length >= 7);
-            if (hasCanasta) {
-                checkGameOver('user');
-                return; // המשחק נגמר
-            } else {
-                // באג חוקים: אסור להישאר בלי קלפים ובלי קנסטה
-                alert("זרקת את הקלף האחרון אבל אין לך קנסטה! לפי החוקים אסור לסיים כך.");
-                // הערה: במצב כזה בדרך כלל השחקן נתקע, בקוד הזה הוא פשוט ימשיך בלי קלפים (באג חוקי)
-            }
+    // בדיקות מורטו וניצחון
+    if (p.hand.length === 0 && !p.mortoTaken) {
+        p.mortoTaken = true;
+        for (let i = 0; i < 11; i++) {
+            if (gameState.deck.length > 0) p.hand.push(gameState.deck.pop());
         }
+        showCelebration("מורטו! 🃏", "#4fc3f7"); 
+        addLog("לקחת מורטו! התור עובר.", "system");
+    } else if (p.hand.length === 0 && p.mortoTaken && p.table.some(m => m.length >= 7)) {
+        checkGameOver('user');
+        return;
     }
 
     // איפוס משתני תור והעברת תור
@@ -886,6 +798,7 @@ function takeMorto(pKey, isDirecto) {
     gameState.selectedIndices = [];
     gameState.hasDrawn = false;
     
+    // באונליין התור עובר ליריב, באופליין למחשב
     gameState.turn = isOnline ? (myRole === 'player1' ? 'player2' : 'player1') : 'comp';
     
     render();
@@ -920,13 +833,7 @@ function takeMorto(pKey, isDirecto) {
     const roomDisplay = document.getElementById('display-room-id');
 
     if (!pScoreEl || !cScoreEl) return; // עצור אם המסך עוד לא נטען
-// עדכון צבע הרקע לפי התור
-    if (gameState.turn === 'user') {
-        document.body.classList.remove('opponent-turn');
-    } else {
-        document.body.classList.add('opponent-turn');
-    }
-    
+
     const u = gameState.players.user;
     const c = gameState.players.comp;
     
@@ -1544,37 +1451,6 @@ function showCelebration(text, color = "var(--gold)") {
 }
 // יצירת חדר חדש
 // יצירת חדר חדש
-function copyRoomNumber() {
-    const roomNum = document.getElementById('modal-room-number').innerText;
-    
-    // יצירת אלמנט זמני נסתר לצורך העתקה
-    const tempInput = document.createElement("input");
-    tempInput.value = roomNum;
-    document.body.appendChild(tempInput);
-    
-    // בחירה והעתקה (השיטה שעובדת הכי טוב בניידים)
-    tempInput.select();
-    tempInput.setSelectionRange(0, 99999); // תמיכה במובייל
-    
-    try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-            // עדכון ויזואלי לכפתור
-            const copyBtn = event.target;
-            const originalText = copyBtn.innerText;
-            copyBtn.innerText = "✅ הועתק!";
-            setTimeout(() => { copyBtn.innerText = originalText; }, 2000);
-        } else {
-            throw new Error('Not successful');
-        }
-    } catch (err) {
-        // אם בכל זאת נכשל, נשאיר את ה-Alert שהיה לך כגיבוי אחרון
-        alert("המספר הוא: " + roomNum);
-    }
-    
-    // הסרת האלמנט הזמני
-    document.body.removeChild(tempInput);
-}
 function createOnlineRoom() {
     const roomId = Math.floor(1000 + Math.random() * 9000).toString();
     currentRoomId = roomId;
@@ -1583,16 +1459,25 @@ function createOnlineRoom() {
     
     const name = document.getElementById('username-input').value.trim() || "שחקן 1";
 
-    // הצגת מספר החדר במודאל ופתיחתו (במקום לעבור למשחק)
-    const roomNumEl = document.getElementById('modal-room-number');
-    if (roomNumEl) roomNumEl.innerText = roomId;
-    toggleModal('room-created-modal', true);
+    // 1. קודם כל - מעבר למסך המשחק
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('game-container').style.display = 'grid';
 
-    // עדכון שם השחקן ב-UI (למקרה שהמשתמש יראה את הרקע)
+    // 2. עדכון שם השחקן ב-UI
     const pNameEl = document.getElementById('p-name');
     if (pNameEl) pNameEl.innerText = name;
 
-    // כתיבת המידע ל-Firebase כרגיל
+    // 3. אתחול המשחק (זה יקרא ל-render שימצא עכשיו את האלמנטים)
+    initGame(); 
+
+    // 4. עדכון מספר החדר בתצוגה (אחרי initGame כדי לוודא שזה לא נדרס)
+    const roomDisplay = document.getElementById('display-room-id');
+    if (roomDisplay) roomDisplay.innerText = roomId;
+
+    addLog(`החדר נוצר! מספר החדר: ${roomId}`, "system");
+    addLog("מחכה להצטרפות השחקן השני...", "system");
+
+    // 5. כתיבת המידע ל-Firebase
     db.ref('rooms/' + roomId).set({
         gameState: gameState,
         player1Name: name,
@@ -1605,35 +1490,13 @@ function createOnlineRoom() {
         alert("נכשל ביצירת חדר בשרת.");
     });
 }
-function confirmRoomCreation() {
-    // 1. סגירת המודאל
-    toggleModal('room-created-modal', false);
 
-    // 2. מעבר למסך המשחק
-    document.getElementById('main-menu').style.display = 'none';
-    document.getElementById('game-container').style.display = 'grid';
-
-    // 3. אתחול המשחק
-    initGame(); 
-
-    // 4. עדכון מספר החדר בתצוגה
-    const roomDisplay = document.getElementById('display-room-id');
-    if (roomDisplay) roomDisplay.innerText = currentRoomId;
-
-    addLog(`החדר נוצר! מספר החדר: ${currentRoomId}`, "system");
-    addLog("מחכה להצטרפות השחקן השני...", "system");
-    
-    render();
-}
 function joinOnlineRoom() {
     const roomId = document.getElementById('room-id-input').value.trim();
     if (!roomId) return alert("נא להזין קוד חדר");
 
     const name = document.getElementById('username-input').value.trim() || "שחקן 2";
-	if (name === "אביאל") {
-        document.getElementById('aviel-msg-text').innerText = "למה אתה משחק קנסטה? אהה כי אין סקי אוי אוי🎿";
-        toggleModal('aviel-modal', true);
-    }
+
     db.ref('rooms/' + roomId).once('value', (snapshot) => {
         if (!snapshot.exists()) return alert("חדר לא נמצא!");
         
@@ -1659,16 +1522,7 @@ function listenToRoom(roomId) {
         if (!data) return;
 
         console.log("Update received from Firebase:", data);
-		
-		if (data.status === 'player_quit') {
-            // אם אני לא זה שיצא (כי השם שלי שונה מהקוויטר)
-            const myName = document.getElementById('p-name').innerText;
-            if (data.quitter !== myName) {
-                alert(`השחקן ${data.quitter} יצא מהמשחק. נחזיר אותך לתפריט הראשי.`);
-                location.reload();
-            }
-            return;
-        }
+
         // 1. טיפול במעבר למסך משחק ורישום לוג הצטרפות (פעם אחת בלבד)
         if (data.status === 'playing') {
             // אם עוד לא רשמנו בלוג שהיריב הצטרף
@@ -1723,23 +1577,6 @@ function listenToRoom(roomId) {
         if (gameState.selectedIndices === undefined) gameState.selectedIndices = [];
         render();
     });
-}
-
-function quitGame() {
-    if (!confirm("האם אתה בטוח שברצונך לצאת מהמשחק?")) return;
-
-    if (isOnline && currentRoomId) {
-        // מעדכן ב-Firebase שמישהו יצא
-        const myName = document.getElementById('p-name').innerText;
-        db.ref('rooms/' + currentRoomId).update({
-            status: 'player_quit',
-            quitter: myName
-        }).then(() => {
-            location.reload(); // חוזר לתפריט הראשי
-        });
-    } else {
-        location.reload(); // במשחק נגד מחשב פשוט מרעננים
-    }
 }
 // פונקציית עזר לעדכון הענן אחרי כל מהלך
 function syncToCloud() {
