@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>קנסטה רמיקוב - גרסה יציבה 2026</title>
+    <style>
+        :root { --tile-bg: #fdf5e6; --blue: #007bff; --red: #dc3545; --black: #333; --orange: #ff8c00; --gold: #ffee58; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a4a1d; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* תפריט ראשי *//* עיצוב משודרג לתפריט הראשי */
+#main-menu { 
+    position: fixed; 
+    inset: 0; 
+    background: linear-gradient(135deg, #1a4a1d 0%, #0a2a0a 100%);
+    background-image: radial-gradient(circle at center, rgba(46, 125, 50, 0.4) 0%, transparent 70%);
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    z-index: 100; 
+}
+
+.menu-card { 
+    background: rgba(255, 255, 255, 0.05); 
+    backdrop-filter: blur(15px); /* אפקט זכוכית */
+    -webkit-backdrop-filter: blur(15px);
+    padding: 50px; 
+    border-radius: 30px; 
+    box-shadow: 0 25px 50px rgba(0,0,0,0.6), inset 0 0 20px rgba(255,255,255,0.05); 
+    border: 1px solid rgba(255, 238, 88, 0.3); 
+    text-align: center; 
+    max-width: 550px; 
+    width: 90%; 
+    animation: fadeInUp 0.8s ease-out;
+}
+
+#username-input {
+    width: 80%;
+    padding: 12px 20px;
+    margin: 20px 0;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid #555;
+    border-radius: 50px;
+    color: white;
+    text-align: center;
+    font-size: 1.1rem;
+    outline: none;
+    transition: 0.3s;
+}
+
+#username-input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 10px rgba(255, 238, 88, 0.4);
+}
+
+.menu-card h1 {
+    font-size: 3rem;
+    margin-bottom: 5px;
+    letter-spacing: 2px;
+    text-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    background: linear-gradient(to bottom, #fff, var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+@keyframes canastaPop {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.canasta-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 30px 60px;
+    border-radius: 20px;
+    font-size: 3.5rem;
+    font-weight: 900;
+    text-align: center;
+    z-index: 10000;
+    pointer-events: none;
+    animation: canastaPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    box-shadow: 0 0 50px rgba(0,0,0,0.5);
+    border: 5px solid;
+}
+
+.toast-red { 
+    background: linear-gradient(135deg, #ff1744, #b71c1c); 
+    color: white; 
+    border-color: #ff8a80;
+    text-shadow: 0 0 20px #fff;
+}
+
+.toast-black { 
+    background: linear-gradient(135deg, #424242, #000000); 
+    color: var(--gold); 
+    border-color: var(--gold);
+    text-shadow: 0 0 15px orange;
+}
+/* אנימציית כניסה */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toastAnim {
+    0% { transform: scale(0.5); opacity: 0; filter: blur(10px); }
+    20% { transform: scale(1.1); opacity: 1; filter: blur(0); }
+    80% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.5); opacity: 0; filter: blur(10px); }
+}
+/* כפתורים משודרגים */
+.btn-main {
+    background: linear-gradient(135deg, #fdf5e6 0%, #e0d0b0 100%);
+    color: #1a4a1d;
+    border: none;
+    padding: 15px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.btn-main:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    background: var(--gold);
+}
+
+.btn-secondary {
+    background: rgba(255,255,255,0.1) !important;
+    color: white !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+}
+
+.btn-secondary:hover {
+    background: rgba(255,255,255,0.2) !important;
+}
+        /* חלונות מודאליים */
+        .custom-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { max-width: 600px; width: 90%; border: 3px solid var(--gold) !important; position: relative; }
+        
+        /* לוגיקת משחק ועיצוב */
+        #game-container { display: none; height: 100vh; grid-template-columns: 340px 1fr; width: 100%; }
+        #side-bar { width: 340px; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; border-left: 2px solid #000; }
+        #log-content { flex-grow: 1; overflow-y: auto; padding: 12px; font-size: 0.85rem; }
+        .log-entry { margin-bottom: 8px; padding: 6px; border-radius: 4px; border-bottom: 1px solid #333; }
+        .log-comp { color: #ffca28; } .log-user { color: #81c784; } .log-system { color: #ff5252; text-align: center; font-weight: bold; }
+        
+        #game-area { padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex-grow: 1; }
+        .status-bar { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 12px 25px; border-radius: 12px; border: 1px solid #444; }
+        .score-num { color: var(--gold); font-weight: bold; }
+        
+        .section { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); }
+        .meld-zone { display: flex; flex-wrap: wrap; gap: 10px; min-height: 70px; }
+        .meld-group { display: flex; direction: ltr; background: rgba(0,0,0,0.4); padding: 5px; border-radius: 8px; border: 2px solid transparent; }
+        .meld-group.canasta { border-color: gold; box-shadow: 0 0 8px gold; }
+        
+        .tile { display: inline-flex; flex-direction: column; justify-content: center; align-items: center; width: 36px; height: 52px; background: var(--tile-bg); border-radius: 5px; margin: 2px; color: black; font-weight: bold; box-shadow: 1px 2px 3px rgba(0,0,0,0.4); cursor: pointer; transition: 0.2s; border: 2px solid transparent; }
+        .tile.red { color: var(--red); } .tile.blue { color: var(--blue); } .tile.black { color: var(--black); } .tile.orange { color: var(--orange); }
+        .tile.joker { color: #7b1fa2; font-size: 0.7rem; }
+        .tile.selected { border-color: var(--gold); transform: translateY(-8px); }
+        .tile.back { background: #333; color: transparent; }
+        
+        #discard-area { 
+    display: block; 
+    position: relative;
+    min-height: 80px; 
+    border: 2px dashed rgba(255,255,255,0.1); 
+    border-radius: 8px; 
+    padding: 10px;
+    margin-bottom: 20px;
+    direction: rtl; /* מבטיח כיווניות מימין לשמאל */
+}
+#game-toast {
+    display: none;
+    position: fixed;
+    top: 50%; /* שנה ל-50% כדי שיהיה באמצע המסך ממש */
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    white-space: nowrap; /* מונע מהטקסט להישבר */
+}
+
+#discard-area .tile {
+    position: absolute;
+    right: 10px; /* נקודת התחלה מימין */
+    transition: all 0.2s;
+}
+        
+        .btn { background: #fff; color: #1a4a1d; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; transition: 0.2s; }
+        .btn:hover:not(:disabled) { background: var(--gold); }
+        .btn:disabled { opacity: 0.4; }
+        
+        /* שכבת ניצחון */
+        #celebration-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; text-align: center; }
+        .celebration-content { background: #000; padding: 50px; border: 5px solid var(--gold); border-radius: 30px; box-shadow: 0 0 50px gold; }
+        .celebration-text { font-size: 4rem; color: var(--gold); text-shadow: 0 0 20px orange; margin-bottom: 20px; }
+        .score-summary { font-size: 2rem; color: white; margin-bottom: 30px; }
+        
+        table { width: 100%; border-collapse: collapse; color: white; margin-top: 15px; }
+        th, td { padding: 10px; border-bottom: 1px solid #444; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="celebration-overlay">
+    <div class="celebration-content">
+        <div class="celebration-text" id="celeb-txt">ניצחון!</div>
+        <div class="score-summary" id="score-summary-txt"></div>
+        <button class="btn" onclick="location.reload()">משחק חדש</button>
+    </div>
+</div>
+
+<div id="main-menu">
+    <div class="menu-card">
+        <div style="font-size: 0.9rem; color: var(--gold); text-transform: uppercase; letter-spacing: 3px;">Welcome to</div>
+        <h1>קנסטה רמיקוב</h1>
+        <div style="color: rgba(255,255,255,0.6); margin-bottom: 20px;">גרסת הפרימיום 2026</div>
+        
+        <input type="text" id="username-input" placeholder="הכנס שם שחקן...">
+
+        <div style="display:grid; grid-template-columns: 1fr; gap: 10px; margin-top:10px; border-top: 1px solid rgba(255,238,88,0.2); padding-top: 15px; margin-bottom: 15px;">
+            <button class="btn-main" onclick="createOnlineRoom()" style="background: #4caf50; color: white;">➕ צור שולחן חדש</button>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="room-id-input" placeholder="קוד חדר..." style="flex: 1; padding: 12px; border-radius: 12px; background: rgba(0,0,0,0.3); color: white; border: 1px solid #555;">
+                <button class="btn-main" onclick="joinOnlineRoom()" style="background: #2196f3; color: white; flex: 0.6; margin: 0;">🔗 הצטרף</button>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top:10px;">
+            <button class="btn-main" onclick="startGame(false)" style="grid-column: span 2; font-size: 1.3rem; background: var(--gold);">
+                שחק נגד המחשב
+            </button>
+            <button class="btn-main btn-secondary" onclick="toggleModal('instructions-modal', true)">
+                📖 הוראות
+            </button>
+            <button class="btn-main btn-secondary" onclick="toggleModal('leaderboard-modal', true)">
+                🏆 שיאים
+            </button>
+            <button class="btn-main" style="grid-column: span 2; background:#ff5252; color:white; font-size: 0.8rem; padding: 8px; margin-top: 10px; opacity: 0.8;" onclick="startGame(true)">
+                מצב דיבאג למפתחים
+            </button>
+        </div>
+        
+        <div style="margin-top: 25px; font-size: 0.7rem; color: rgba(255,255,255,0.3);">
+            &copy; Created by Noam AI • v2.4 Stability
+        </div>
+    </div>
+</div>
+
+<div id="instructions-modal" class="custom-modal">
+    <div class="modal-content menu-card" style="max-width: 800px; width: 95%;">
+        <h2 style="color: var(--gold); border-bottom: 2px solid var(--gold); padding-bottom: 10px;">📖 מדריך למשתמש: קנסטה רמיקוב 2026</h2>
+        
+        <div style="text-align: right; font-size: 0.95rem; line-height: 1.6; max-height: 450px; overflow-y: auto; padding-left: 10px;">
+            
+            <section>
+                <h3 style="color: #4fc3f7;">🎯 המטרה</h3>
+                <p>צבירת ניקוד מקסימלי על ידי הורדת סדרות קלפים לשולחן, יצירת <b>קנסטות</b> (סדרות של 7 קלפים) וסיום היד לפני היריב.</p>
+            </section>
+
+            <section>
+                <h3 style="color: #4fc3f7;">🧱 סוגי הסדרות (מינימום 3 קלפים)</h3>
+                <ul>
+                    <li><b>סדרה עולה (Run):</b> רצף מספרים באותו צבע (למשל: 4, 5, 6 כחול). תומך ברצף מעגלי (11, 12, 13, 1).</li>
+                    <li><b>סט (Set):</b> קבוצת קלפים בעלי אותו מספר בצבעים שונים (למשל: שלושה 8-ים).</li>
+                    <li><b>ג'וקרים (2 ו-J):</b> מחליפים כל קלף. <b>חוק:</b> מותר ג'וקר אחד בלבד בכל סדרה!</li>
+                </ul>
+            </section>
+
+            <section>
+                <h3 style="color: #4fc3f7;">🚀 מהלך התור</h3>
+                <ol>
+                    <li><b>משיכה (חובה):</b> מהקופה הסגורה או לקיחת <b>כל</b> ערימת הזריקה (אם הקלף העליון עוזר לסדרה).</li>
+                    <li><b>פעולות (רשות):</b> הורדת סדרות חדשות או הוספה לסדרות קיימות על השולחן שלך.</li>
+                    <li><b>זריקה (חובה):</b> בחירת קלף אחד מהיד וזריקתו לערימה לסיום התור.</li>
+                </ol>
+            </section>
+
+            <section>
+                <h3 style="color: #ff5252;">🔓 "הירידה הראשונה" (חוק ה-30)</h3>
+                <p>כדי להתחיל להוריד קלפים, עליך להציג לפחות <b>סדרה עולה (Run)</b> אחת ושווי נקודות כולל של <b>30 נקודות לפחות</b> בתור אחד.</p>
+            </section>
+
+            <section>
+                <h3 style="color: #4fc3f7;">📦 המורטו (The Morto)</h3>
+                <p>כשנשארים ללא קלפים, מקבלים חבילת <b>11 קלפים</b> נוספת.</p>
+                <ul>
+                    <li><b>דירקטו:</b> סיום היד ללא זריקה - מקבלים את המורטו וממשיכים לשחק מיד!</li>
+                    <li><b>רגיל:</b> סיום בזריקה - המורטו יחכה לתור הבא.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h3 style="color: #ffca28;">🏆 ניקוד וניצחון</h3>
+                <table style="font-size: 0.85rem; background: rgba(0,0,0,0.3); border-radius: 8px;">
+                    <tr><th>קלף</th><th>נקודות</th><th>בונוס קנסטה (7 קלפים)</th></tr>
+                    <tr><td>3 עד 7</td><td>5</td><td rowspan="2"><b>נקייה (אדומה):</b> 200 נק'</td></tr>
+                    <tr><td>8 עד 13, ג'וקר</td><td>10</td></tr>
+                    <tr><td>אס (1)</td><td>15</td><td><b>מעורבת (שחורה):</b> 100 נק'</td></tr>
+                </table>
+                <p style="margin-top: 10px;"><b>חובה קנסטה אחת לפחות כדי לנצח ולסיים את המשחק!</b></p>
+            </section>
+
+        </div>
+        <button class="btn-main" style="margin-top:20px; width: 100%;" onclick="toggleModal('instructions-modal', false)">הבנתי, בואו נשחק!</button>
+    </div>
+</div>
+<div id="leaderboard-modal" class="custom-modal">
+    <div class="modal-content menu-card">
+        <h2>לוח תוצאות</h2>
+        <table>
+            <thead><tr><th>שחקן</th><th>ניקוד</th></tr></thead>
+            <tbody id="leaderboard-body"></tbody>
+        </table>
+        <button class="btn" style="margin-top:20px" onclick="toggleModal('leaderboard-modal', false)">סגור</button>
+    </div>
+</div>
+
+<div id="game-container">
+    <div id="side-bar">
+        <div style="padding:15px; background:#222; text-align:center; color:gold; font-weight:bold;">לוג משחק</div>
+        <div id="log-content"></div>
+    </div>
+    <div id="game-area">
+     <div class="status-bar">
+    <div>
+        שחקן: <span id="p-name" class="score-num">-</span> | 
+        חדר: <span id="display-room-id" style="color:var(--gold); font-weight:bold;">-</span> | 
+        ניקוד: <span id="p-score" class="score-num">0</span>
+    </div>
+    <div id="turn-txt" style="color: var(--gold); font-weight:bold;">טוען...</div>
+    <div>מחשב: <span id="c-score" class="score-num">0</span></div>
+</div>
+        <div class="section">
+            <h4>הורדות מחשב (<span id="c-count">11</span> קלפים)</h4>
+            <div id="comp-melds" class="meld-zone"></div>
+        </div>
+
+        <div style="display:flex; gap:20px;">
+            <div class="section" style="width:120px; text-align:center; cursor:pointer;" onclick="drawFromDeck()">
+                <h4>קופה</h4>
+                <div class="tile back" style="margin:auto;"></div>
+                <div id="deck-num" style="margin-top:5px; font-weight:bold;">0</div>
+            </div>
+            <div class="section" style="flex-grow:1; cursor:pointer;" onclick="takeDiscardPile()">
+                <h4>זריקה (לחץ למשיכה)</h4>
+                <div id="discard-area"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h4>הורדות שלי</h4>
+            <div id="user-melds" class="meld-zone"></div>
+        </div>
+
+        <div class="section">
+            <h4>היד שלי</h4>
+            <div id="user-hand" style="display:flex; flex-wrap:wrap; justify-content:center;"></div>
+        </div>
+
+        <div style="text-align:center;">
+    		<button class="btn" id="meld-btn" onclick="createNewMeld()">הורד סדרה</button>
+    		<button class="btn" id="reset-btn" style="background:#ff9800; color:white" onclick="resetTurnMelds()">חזור לתחילת התור</button> 
+    		<button class="btn" id="finish-btn" onclick="finishTurn()">זרוק קלף</button>
+	    </div>
+    </div>
+</div>
+<div id="game-toast" style="display: none; position: fixed; top: 25%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; pointer-events: none;">
+    <div id="toast-text" style="font-size: 5rem; font-weight: 900; text-shadow: 0 0 30px rgba(0,0,0,0.6); animation: toastAnim 2s forwards;"></div>
+</div>
+<div id="canasta-announcement" style="display: none;"></div>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<script>
+    // הגדרות Firebase שקיבלת מהקונסול
+    const firebaseConfig = {
+    apiKey: "AIzaSyDYBycEzPuroWIVj8JT7VLqxt7JLpHgXKM",
+    authDomain: "kansta-41ddf.firebaseapp.com",
+    // שנה את השורה הבאה לזו:
+    databaseURL: "https://kansta-41ddf-default-rtdb.firebaseio.com", 
+    projectId: "kansta-41ddf",
+    storageBucket: "kansta-41ddf.firebasestorage.app",
+    messagingSenderId: "441082089185",
+    appId: "1:441082089185:web:524c172c2c829044d131a0"
+};
+    // אתחול Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+	let currentRoomId = null;
+	let myRole = null; // ישמור 'player1' או 'player2'
+	let isOnline = false;
+    // משתנים למצב אונליין
+    const gameState = {
+    deck: [],
+    discardPile: [],
+    players: {
+        user: { hand: [], table: [], downed: false, mortoTaken: false },
+        comp: { hand: [], table: [], downed: false, mortoTaken: false }
+    },
+    turn: 'user',
+    hasDrawn: false,
+    selectedIndices: [],
+    isDebug: false,
+    currentTurnMelds: [], 
+    originalHandBeforeMeld: null,
+    opponentJoinedLogDone: false // הוסיף את זה כאן
+};
+    const COLORS = {'red':'אדום', 'blue':'כחול', 'black':'שחור', 'orange':'כתום'};
+
+   const Utils = {
+    getTileName: (t) => !t ? "" : (t.type === 'joker' || t.v === 2 ? "ג'וקר 🃏" : `${t.v} ${COLORS[t.c]}`),
+    
+    calcPoints: (meld, includeBonus = true) => {
+    // 1. חישוב שווי הקלפים בלבד (מה שקובע לירידה של ה-30)
+    let base = meld.reduce((s, t) => {
+        if (t.v === 1) return s + 15; // אס
+        if (t.v >= 8 || t.v === 'J' || t.v === 2 || t.type === 'joker') return s + 10; // קלפים גבוהים וג'וקרים
+        return s + 5; // קלפים נמוכים (3-7)
+    }, 0);
+
+    // 2. הוספת בונוס קנסטה רק אם ביקשנו (בדרך כלל בסוף תור או בסוף משחק)
+    if (includeBonus && meld.length >= 7) {
+        const isClean = !meld.some(t => t.type === 'joker' || t.v === 2);
+        base += isClean ? 200 : 100;
+    }
+    
+    return base;
+},
+
+    // הפונקציה המאוחדת לבדיקת רצפים וסטים
+    isValid: (tiles) => {
+    if (tiles.length < 3) return false;
+
+    // 1. הפרדה בין מספרים "רגילים" לג'וקרים (2 ו-J)
+    const jokers = tiles.filter(t => t.type === 'joker' || t.v === 2);
+    const nums = tiles.filter(t => t.type === 'num' && t.v !== 2);
+
+    // 2. חוק הג'וקרים: אסור יותר מג'וקר אחד בסדרה שכוללת מספרים
+    if (nums.length > 0 && jokers.length > 1) return false;
+
+    // 3. בדיקת "סט" (Set) - כל המספרים זהים
+    if (nums.length > 0 && nums.every(t => t.v === nums[0].v)) return 'set';
+
+    // 4. בדיקת "רצף" (Run) - אותו צבע ומספרים עוקבים
+    if (nums.length > 0 && nums.every(t => t.c === nums[0].c)) {
+        
+        const checkSequence = (values) => {
+            let sorted = [...values].sort((a, b) => a - b);
+            let holes = 0;
+            for (let i = 0; i < sorted.length - 1; i++) {
+                let diff = sorted[i+1] - sorted[i];
+                if (diff === 0) return false; // כפול באותו צבע לא חוקי ברצף
+                holes += (diff - 1);
+            }
+            return holes <= jokers.length;
+        };
+
+        // א. בדיקה רגילה (1, 2, 3...)
+        if (checkSequence(nums.map(t => t.v))) return 'run';
+
+        // ב. בדיקה מעגלית משופרת (11, 12, 13, 1)
+        // אם יש 1, נבדוק אם הוא יכול להשלים רצף גבוה
+        if (nums.some(t => t.v === 1)) {
+            const circularValues = nums.map(t => t.v === 1 ? 14 : t.v);
+            if (checkSequence(circularValues)) return 'run';
+        }
+    }
+
+    // 5. סט של ג'וקרים בלבד
+    if (nums.length === 0 && jokers.length >= 3) return 'set';
+
+    return false;
+}
+};
+
+    function toggleModal(id, show) {
+        document.getElementById(id).style.display = show ? 'flex' : 'none';
+        if (id === 'leaderboard-modal' && show) updateLeaderboardUI();
+    }
+
+    function updateLeaderboardUI() {
+        const scores = JSON.parse(localStorage.getItem('canasta_scores') || '[]');
+        const tbody = document.getElementById('leaderboard-body');
+        tbody.innerHTML = scores.length ? scores.map(s => `<tr><td>${s.name}</td><td>${s.score}</td></tr>`).join('') 
+                                        : '<tr><td colspan="2">אין תוצאות עדיין</td></tr>';
+    }
+
+    function addLog(msg, type) {
+    const log = document.getElementById('log-content');
+    const d = document.createElement('div');
+    
+    let displayType = "";
+    if (type === 'system') {
+        displayType = "מערכת";
+    } else if (type === 'user') {
+        displayType = "אתה";
+    } else if (type === 'comp') {
+        // אם זה אונליין, נכתוב "יריב" במקום "מחשב"
+        displayType = isOnline ? "היריב" : "מחשב";
+    }
+    
+    d.className = `log-entry ${type==='comp'?'log-comp': type==='system'?'log-system':'log-user'}`;
+    d.innerHTML = `<b>${displayType}:</b> ${msg}`;
+    log.prepend(d);
+}
+
+    function startGame(debug) {
+    gameState.isDebug = debug;
+    const nameInput = document.getElementById('username-input').value.trim();
+    
+    // הגדרת השם הסופי
+    const finalName = nameInput || "שחקן 1";
+    
+    document.getElementById('p-name').innerText = finalName;
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('game-container').style.display = 'grid';
+    
+    // אתחול המשחק
+    initGame();
+
+    // הבדיקה המיוחדת עבור אביאל
+    if (finalName === "אביאל") {
+        setTimeout(() => {
+            showCelebration("למה אתה משחק קנסטה? אהה כי אין סקי אוי אוי🎿", "#ff5252");
+        }, 1500);
+    }
+}
+
+  function initGame() {
+    gameState.deck = [];
+    for(let i=0; i<2; i++) {
+        Object.keys(COLORS).forEach(c => { 
+            for(let v=1; v<=13; v++) gameState.deck.push({v, c, type:'num'}); 
+        });
+        gameState.deck.push({v: 'J', c: 'orange', type: 'joker'});
+    }
+    gameState.deck.sort(() => Math.random() - 0.5);
+
+    gameState.players.user.hand = gameState.deck.splice(-11);
+    gameState.players.comp.hand = gameState.deck.splice(-11);
+    
+    // קלף ראשון פתוח בערימה
+    gameState.discardPile = [gameState.deck.pop()]; 
+    
+    // תיקון השגיאה: שימוש ב-gameState.turn במקום starts הלא קיים
+    if (isOnline) {
+        gameState.turn = 'user'; // בחדר חדש, היוצר (player1) תמיד מתחיל
+    } else {
+        gameState.turn = Math.random() < 0.5 ? 'user' : 'comp';
+    }
+    
+    gameState.hasDrawn = false;
+
+    addLog(`המשחק התחיל! קלף פתיחה: ${Utils.getTileName(gameState.discardPile[0])}`, "system");
+    
+    if (gameState.turn === 'user') {
+        addLog("תורך! ממתין שתמשוך קלף מהקופה או מהערימה.", "system");
+    } else {
+        addLog("תור המחשב מתחיל...", "system");
+        setTimeout(compAI, 1500); 
+    }
+
+    render();
+}
+
+    function drawFromDeck() {
+    if(gameState.turn !== 'user' || gameState.hasDrawn) return;
+    const t = gameState.deck.pop();
+    if (t) {
+        gameState.players.user.hand.push(t);
+        gameState.hasDrawn = true;
+        addLog(`משכת ${Utils.getTileName(t)} מהקופה.`, "user");
+        addLog("כעת בצע מהלכים או בחר קלף וזרוק אותו לסיום התור.", "system"); // ההנחיה החדשה
+        render();
+        syncToCloud();
+   	 }
+	}
+
+    // עדכון בתוך takeDiscardPile
+function takeDiscardPile() {
+    if (gameState.turn !== 'user' || gameState.hasDrawn) return;
+    if (gameState.discardPile.length === 0) return;
+
+    const count = gameState.discardPile.length;
+    gameState.players.user.hand = gameState.players.user.hand.concat(gameState.discardPile);
+    gameState.discardPile = [];
+    gameState.hasDrawn = true;
+    
+    addLog(`לקחת את כל ערימת הזריקה (${count} קלפים)!`, "user");
+    render();
+}
+
+  function createNewMeld() {
+    const p = gameState.players.user;
+    
+    // הגנה: וודוא שהמערך קיים (למקרה שנדרס על ידי סנכרון ענן)
+    if (!gameState.currentTurnMelds) {
+        gameState.currentTurnMelds = [];
+    }
+    
+    if (gameState.selectedIndices.length < 3) {
+        alert("סדרה חייבת להכיל לפחות 3 קלפים!");
+        return;
+    }
+
+    const selectedTiles = gameState.selectedIndices.map(i => p.hand[i]);
+    const type = Utils.isValid(selectedTiles);
+    
+    if (!type) {
+        alert("סדרה לא חוקית!");
+        return;
+    }
+
+    if (gameState.currentTurnMelds.length === 0) {
+        gameState.originalHandBeforeMeld = JSON.parse(JSON.stringify(p.hand));
+    }
+
+    gameState.currentTurnMelds.push(selectedTiles);
+    p.table.push(selectedTiles);
+
+    if (selectedTiles.length >= 7) {
+    const isClean = !selectedTiles.some(t => t.type === 'joker' || t.v === 2);
+    showCanastaCelebration(isClean); // כאן הקריאה החדשה!
+}
+    // הסרה מהיד
+    gameState.selectedIndices.sort((a, b) => b - a).forEach(i => p.hand.splice(i, 1));
+    gameState.selectedIndices = [];
+    
+    addLog(`הורדת סדרה זמנית: ${type === 'run' ? 'סדרה עולה' : 'סט'}.`, "user");
+
+    // בדיקת מורטו דירקטו (היד התרוקנה כתוצאה מהורדה)
+    if (p.hand.length === 0 && !p.mortoTaken) {
+        takeMorto('user', true); 
+    }
+
+    render();
+    syncToCloud();
+}
+
+function resetTurnMelds() {
+    const p = gameState.players.user;
+    
+    // אם לא בוצעו הורדות בתור הזה, אין מה לאפס
+    if (!gameState.originalHandBeforeMeld) {
+        addLog("לא בוצעו שינויים שניתן לבטל.", "system");
+        return;
+    }
+
+    // 1. החזרת היד למצב המקורי (Deep Copy)
+    p.hand = JSON.parse(JSON.stringify(gameState.originalHandBeforeMeld));
+    
+    // 2. הסרת כל הסדרות שהורדו בתור הנוכחי מהשולחן
+    const numToRemove = gameState.currentTurnMelds.length;
+    if (numToRemove > 0) {
+        p.table.splice(-numToRemove);
+    }
+
+    // 3. איפוס משתני העזר של התור
+    gameState.currentTurnMelds = [];
+    gameState.originalHandBeforeMeld = null;
+    gameState.selectedIndices = [];
+    
+    // אם ביטלנו את ההורדה הראשונה, נחזיר את הסטטוס ל-false
+    // (זה רלוונטי רק אם הוא עוד לא היה "downed" לפני תחילת התור)
+    // במידה והלוגיקה שלך משנה את downed רק ב-finishTurn, זה יסתדר מעצמו.
+
+    addLog("התור אופס! כל הקלפים חזרו ליד.", "system");
+    render();
+}
+    function handleFirstDown(tiles) {
+        const p = gameState.players.user;
+        const type = Utils.isValid(tiles);
+        if (!type) {
+            alert("הקלפים שבחרת חייבים להוות סדרה חוקית.");
+            return;
+        }
+        const points = Utils.calcPoints(tiles);
+        if (type === 'run' && points >= 30) {
+            p.downed = true;
+            p.table.push(tiles);
+            processSuccessfulMeld();
+            addLog("ירידה ראשונה מוצלחת!", "user");
+        } else {
+            alert("בירידה ראשונה עליך לבחור סדרה עולה (Run) בשווי 30 נקודות לפחות.");
+        }
+    }
+
+    function processSuccessfulMeld() {
+    // הסרת הקלפים מהיד (כפי שהיה)
+    gameState.selectedIndices.sort((a, b) => b - a).forEach(i => gameState.players.user.hand.splice(i, 1));
+    gameState.selectedIndices = [];
+    
+    // בדיקה אם השחקן נשאר בלי קלפים (מורטו דירקטו)
+    if (gameState.players.user.hand.length === 0 && !gameState.players.user.mortoTaken) {
+        takeMorto('user', true); // true מסמן שזה דירקטו
+    }
+    
+    render();
+}
+
+function takeMorto(pKey, isDirecto) {
+    const p = gameState.players[pKey];
+    p.mortoTaken = true;
+    
+    // משיכת 11 קלפים
+    for (let i = 0; i < 11; i++) {
+        if (gameState.deck.length > 0) {
+            p.hand.push(gameState.deck.pop());
+        }
+    }
+    
+    if (isDirecto) {
+        // במורטו דירקטו - אנחנו מאפסים את הזיכרון של תחילת התור כדי למנוע באגים בביטול
+        gameState.currentTurnMelds = [];
+        gameState.originalHandBeforeMeld = null;
+        
+        if (pKey === 'user') showCelebration("מורטו דירקטו! 🚀", "#81c784");
+        addLog(`<b>מורטו דירקטו!</b> ${pKey === 'user' ? 'קיבלת' : 'המחשב קיבל'} 11 קלפים וממשיך לשחק.`, "system");
+    } else {
+        if (pKey === 'user') showCelebration("מורטו! 🃏", "#4fc3f7");
+        addLog(`${pKey === 'user' ? 'עשית' : 'המחשב עשה'} מורטו.`, "system");
+    }
+    
+    render();
+}
+    function checkGameOver(winnerKey) {
+        const uTotal = gameState.players.user.table.reduce((s, m) => s + Utils.calcPoints(m), 0);
+        const cTotal = gameState.players.comp.table.reduce((s, m) => s + Utils.calcPoints(m), 0);
+        const diff = uTotal - cTotal;
+        
+        const overlay = document.getElementById('celebration-overlay');
+        const txt = document.getElementById('celeb-txt');
+        const summary = document.getElementById('score-summary-txt');
+        
+        overlay.style.display = 'flex';
+        txt.innerText = winnerKey === 'user' ? "ניצחת במשחק!" : "המחשב ניצח!";
+        summary.innerHTML = `הניקוד שלך: ${uTotal}<br>ניקוד המחשב: ${cTotal}<br><br><b>הפרש סופי: ${diff} נקודות</b>`;
+    }
+
+   function finishTurn() {
+    const p = gameState.players.user;
+    
+    if (gameState.selectedIndices.length !== 1) {
+        alert("בחר קלף אחד לזריקה כדי לסיים את התור.");
+        return;
+    }
+
+    // תיקון לוגי: בודקים תנאי ירידה ראשונה רק אם השולחן היה ריק לפני התור הזה
+    // אנחנו בודקים את אורך השולחן פחות הסדרות שהורדו בתור הנוכחי
+    const tableBeforeThisTurnCount = p.table.length - gameState.currentTurnMelds.length;
+
+    if (tableBeforeThisTurnCount === 0 && gameState.currentTurnMelds.length > 0) {
+        let totalPoints = 0;
+        let hasRun = false;
+        
+        gameState.currentTurnMelds.forEach(meld => {
+            totalPoints += Utils.calcPoints(meld, false);
+            if (Utils.isValid(meld) === 'run') hasRun = true;
+        });
+
+        if (totalPoints < 30 || !hasRun) {
+            alert(`לירידה ראשונה חובה סדרה עולה (Run) ו-30 נקודות. כרגע יש לך: ${totalPoints}`);
+            return; 
+        }
+        p.downed = true; 
+    } else {
+        // אם כבר היו סדרות על השולחן, אנחנו מוודאים ש-downed מסומן כ-true
+        p.downed = true;
+    }
+
+    // ביצוע הזריקה
+    const t = p.hand.splice(gameState.selectedIndices[0], 1)[0];
+    gameState.discardPile.push(t);
+    addLog(`זרקת ${Utils.getTileName(t)}.`, "user");
+
+    // בדיקות מורטו וניצחון
+    if (p.hand.length === 0 && !p.mortoTaken) {
+        p.mortoTaken = true;
+        for (let i = 0; i < 11; i++) {
+            if (gameState.deck.length > 0) p.hand.push(gameState.deck.pop());
+        }
+        showCelebration("מורטו! 🃏", "#4fc3f7"); 
+        addLog("לקחת מורטו! התור עובר.", "system");
+    } else if (p.hand.length === 0 && p.mortoTaken && p.table.some(m => m.length >= 7)) {
+        checkGameOver('user');
+        return;
+    }
+
+    // איפוס משתני תור והעברת תור
+    gameState.currentTurnMelds = [];
+    gameState.originalHandBeforeMeld = null;
+    gameState.selectedIndices = [];
+    gameState.hasDrawn = false;
+    
+    // באונליין התור עובר ליריב, באופליין למחשב
+    gameState.turn = isOnline ? (myRole === 'player1' ? 'player2' : 'player1') : 'comp';
+    
+    render();
+    syncToCloud(); 
+
+    if (!isOnline) {
+        setTimeout(compAI, 1000);
+    }
+}
+    function checkMorto(pKey) {
+        const p = gameState.players[pKey];
+        if (p.hand.length === 0 && !p.mortoTaken) {
+            p.mortoTaken = true;
+            for (let i = 0; i < 11; i++) {
+                if (gameState.deck.length > 0) {
+                    p.hand.push(gameState.deck.pop());
+                }
+            }
+            addLog(`${pKey === 'user' ? 'לקחת' : 'המחשב לקח'} את המורטו!`, "system");
+            render();
+        }
+    }
+
+ function render() {
+    // 1. הגנה: בדיקה שהאלמנטים הבסיסיים קיימים ב-DOM
+    const pScoreEl = document.getElementById('p-score');
+    const cScoreEl = document.getElementById('c-score');
+    const pNameEl = document.getElementById('p-name');
+    const deckNumEl = document.getElementById('deck-num');
+    const cCountEl = document.getElementById('c-count');
+    const turnTxt = document.getElementById('turn-txt');
+    const roomDisplay = document.getElementById('display-room-id');
+
+    if (!pScoreEl || !cScoreEl) return; // עצור אם המסך עוד לא נטען
+
+    const u = gameState.players.user;
+    const c = gameState.players.comp;
+    
+    // 2. עדכון כותרת היריב
+    const compHeader = document.querySelector('.section h4');
+    if (compHeader) {
+        compHeader.innerText = isOnline ? `הורדות של היריב (${c.hand.length} קלפים)` : `הורדות מחשב (${c.hand.length} קלפים)`;
+    }
+
+    // 3. עדכון מספר חדר
+    if (isOnline && currentRoomId && roomDisplay) {
+        roomDisplay.innerText = currentRoomId;
+    }
+
+    // 4. עדכון ניקוד ומספרים (עם בדיקת קיום ליתר ביטחון)// --- 4. עדכון ניקוד ומספרים (כאן בוצע התיקון!) ---
+    // אנחנו מוודאים ש-table תמיד יהיה מערך, גם אם הוא undefined מהענן
+    const userTable = (u && u.table) ? u.table : [];
+    const compTable = (c && c.table) ? c.table : [];
+
+    pScoreEl.innerText = userTable.reduce((s, m) => s + Utils.calcPoints(m), 0);
+    cScoreEl.innerText = compTable.reduce((s, m) => s + Utils.calcPoints(m), 0);
+    
+    if (deckNumEl) deckNumEl.innerText = gameState.deck ? gameState.deck.length : 0;
+    if (cCountEl) cCountEl.innerText = c.hand ? c.hand.length : 0;
+    // 5. עדכון טקסט תור
+    if (turnTxt) {
+        if (gameState.turn === 'user') {
+            if (!gameState.hasDrawn) {
+                turnTxt.innerText = "⏳ חובה למשוך קלף";
+                turnTxt.style.color = "#ff5252";
+            } else {
+                turnTxt.innerText = "💡 בצע מהלך או זרוק קלף";
+                turnTxt.style.color = "var(--gold)";
+            }
+        } else {
+            turnTxt.innerText = isOnline ? "⌛ היריב חושב..." : "🤖 המחשב מבצע מהלכים...";
+            turnTxt.style.color = "white";
+        }
+    }
+
+    // 6. רנדור היד של השחקן
+    const h = document.getElementById('user-hand');
+    if (h) {
+        h.innerHTML = '';
+        [...u.hand].sort((a,b) => a.v - b.v).forEach((t, i) => {
+            const el = createTileUI(t);
+            // מציאת האינדקס המקורי ביד (למנוע באגים של מיון)
+            const originalIndex = u.hand.indexOf(t);
+            if(gameState.selectedIndices.includes(originalIndex)) el.classList.add('selected');
+            el.onclick = () => {
+                if(gameState.selectedIndices.includes(originalIndex)) 
+                    gameState.selectedIndices = gameState.selectedIndices.filter(x => x !== originalIndex);
+                else 
+                    gameState.selectedIndices.push(originalIndex);
+                render();
+            };
+            h.appendChild(el);
+        });
+    }
+
+    // 7. רנדור אזור הזריקה
+    const d = document.getElementById('discard-area');
+    if (d) {
+        d.innerHTML = '';
+        const visibleDiscard = gameState.discardPile.slice(-15); 
+        visibleDiscard.forEach((t, idx) => {
+            const el = createTileUI(t);
+            el.style.right = (idx * 30) + "px"; 
+            el.style.zIndex = idx; 
+            d.appendChild(el);
+        });
+    }
+
+    // 8. רנדור השולחן
+    renderTable('user-melds', u.table);
+    renderTable('comp-melds', c.table);
+
+    // 9. שליטה בכפתורים
+    const meldBtn = document.getElementById('meld-btn');
+    const finishBtn = document.getElementById('finish-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const canInteract = (gameState.turn === 'user' && gameState.hasDrawn);
+
+    if (meldBtn) meldBtn.disabled = !canInteract;
+    if (finishBtn) finishBtn.disabled = !canInteract;
+    if (resetBtn) resetBtn.disabled = !canInteract || !gameState.originalHandBeforeMeld;
+}
+
+    function createTileUI(t) {
+        const e = document.createElement('div');
+        e.className = `tile ${t.c}`;
+        e.innerText = t.v === 'J' ? '🃏' : t.v;
+        if(t.type === 'joker' || t.v === 2) e.classList.add('joker');
+        return e;
+    }
+
+    function renderTable(id, table) {
+    const el = document.getElementById(id);
+    // הגנה 1: בדיקה שהאלמנט קיים ב-DOM
+    if (!el) return;
+
+    // הגנה 2: וודוא ש-table הוא מערך (מונע קריסה ב-Firebase כשהשולחן ריק)
+    const safeTable = table || [];
+    
+    const playerKey = id.includes('user') ? 'user' : 'comp';
+    el.innerHTML = '';
+    
+    safeTable.forEach((m, idx) => {
+        // הגנה 3: וודוא שהסדרה הספציפית קיימת
+        if (!m) return;
+
+        const g = document.createElement('div');
+        g.className = 'meld-group' + (m.length >= 7 ? ' canasta' : '');
+        
+        if (playerKey === 'user') {
+            g.style.cursor = 'pointer';
+            g.title = "לחץ להוספת קלף נבחר";
+            g.onclick = () => {
+                if (gameState.turn === 'user' && gameState.hasDrawn) {
+                    addToExistingMeld('user', idx);
+                }
+            };
+        }
+
+        // --- לוגיקת מיון חכמה לתצוגה (נשמרה ללא שינוי) ---
+        let displayTiles = [...m];
+        const isRun = Utils.isValid(m) === 'run';
+
+        if (isRun) {
+            // 1. הפרדה למספרים רגילים וג'וקרים
+            let nums = m.filter(t => t.type === 'num' && t.v !== 2);
+            let jokers = [...m.filter(t => t.type === 'joker' || t.v === 2)];
+            
+            // 2. קביעת סדר המספרים (רגיל או מעגלי)
+            const isCircular = nums.some(t => t.v === 1) && nums.some(t => t.v > 10);
+            nums.sort((a, b) => {
+                const valA = (isCircular && a.v === 1) ? 14 : a.v;
+                const valB = (isCircular && b.v === 1) ? 14 : b.v;
+                return valA - valB;
+            });
+
+            // 3. בניית הרצף הסופי עם הג'וקרים במיקומים הנכונים
+            let sortedRun = [];
+            if (nums.length > 0) {
+                let currentVal = (isCircular && nums[0].v === 1) ? 14 : nums[0].v;
+                
+                for (let i = 0; i < nums.length; i++) {
+                    const targetVal = (isCircular && nums[i].v === 1) ? 14 : nums[i].v;
+                    
+                    while (currentVal < targetVal && jokers.length > 0) {
+                        sortedRun.push(jokers.shift());
+                        currentVal++;
+                    }
+                    
+                    sortedRun.push(nums[i]);
+                    currentVal = targetVal + 1;
+                }
+                
+                displayTiles = [...jokers, ...sortedRun];
+            }
+        } else {
+            displayTiles.sort((a, b) => a.v - b.v);
+        }
+
+        // רנדור הקלפים לתוך הקבוצה
+        displayTiles.forEach(t => g.appendChild(createTileUI(t)));
+        el.appendChild(g);
+    });
+}
+
+    function shouldTakeDiscard(hand, topCard) {
+        if (!topCard) return false;
+        const matches = hand.filter(t => t.v === topCard.v).length;
+        return matches >= 2;
+    }
+
+  function addToExistingMeld(playerKey, meldIndex) {
+    const p = gameState.players[playerKey];
+    if (gameState.selectedIndices.length !== 1) {
+        alert("בחר קלף אחד מהיד כדי להוסיף לסדרה.");
+        return;
+    }
+    const tileToAdd = p.hand[gameState.selectedIndices[0]];
+    const currentMeld = p.table[meldIndex];
+    const newMeldCandidate = [...currentMeld, tileToAdd];
+    
+    if (Utils.isValid(newMeldCandidate)) {
+        p.table[meldIndex] = newMeldCandidate;
+        p.hand.splice(gameState.selectedIndices[0], 1);
+        gameState.selectedIndices = [];
+        
+        // --- התיקון: בדיקת קנסטה בעת הוספה ---
+        if (newMeldCandidate.length === 7) {
+            const isClean = !newMeldCandidate.some(t => t.type === 'joker' || t.v === 2);
+            showCanastaCelebration(isClean);
+        }
+        
+        addLog(`הוספת ${Utils.getTileName(tileToAdd)} לסדרה קיימת.`, "user");
+        
+        if (p.hand.length === 0 && !p.mortoTaken) {
+            takeMorto(playerKey, true);
+        } else {
+            render();
+        }
+    } else {
+        alert("הקלף הזה לא מתאים לסדרה הנבחרת!");
+    }
+}
+function tryToMeldForComp(player) {
+    const hand = player.hand;
+    // הפרדה לקלפים רגילים וג'וקרים
+    const jokers = hand.filter(t => t.v === 2 || t.type === 'joker');
+    const normal = hand.filter(t => t.v !== 2 && t.type !== 'joker');
+
+    // --- אסטרטגיה 0: ריצה למורטו (חדש!) ---
+    // אם המחשב קרוב לסיום היד (4 קלפים או פחות) וטרם לקח מורטו
+    if (!player.mortoTaken && hand.length <= 4 && jokers.length > 0) {
+        for (let j of jokers) {
+            for (let meld of player.table) {
+                // המחשב בודק: האם הג'וקר יכול להיכנס לסדרה קיימת?
+                if (Utils.isValid([...meld, j])) {
+                    const jokerIndex = hand.indexOf(j);
+                    meld.push(hand.splice(jokerIndex, 1)[0]);
+                    addLog("המחשב משתמש בג'וקר כדי לרוץ למורטו!", "comp");
+                    
+                    // בדיקת קנסטה (למקרה שהג'וקר היה הקלף ה-7)
+                    if (meld.length === 7) {
+                        showCanastaCelebration(false); // תמיד שחורה כי הוספנו ג'וקר
+                    }
+                    return true; 
+                }
+            }
+        }
+    }
+
+    // אסטרטגיה 1: השלמת קנסטות קיימות על השולחן (הכי חשוב!)
+    for (let meld of player.table) {
+        // אם חסר קלף אחד לקנסטה (יש 6 קלפים)
+        if (meld.length === 6) {
+            for (let i = 0; i < hand.length; i++) {
+                if (Utils.isValid([...meld, hand[i]])) {
+                    meld.push(hand.splice(i, 1)[0]);
+                    addLog("המחשב השלים קנסטה!", "comp");
+                    // בדיקה אם זו קנסטה אדומה להודעה חגיגית
+                    const isClean = !meld.some(t => t.type === 'joker' || t.v === 2);
+                    showCanastaCelebration(isClean);
+                    return true;
+                }
+            }
+        }
+    }
+
+    // אסטרטגיה 2: ירידה ראשונה (אם עוד לא ירד)
+    if (!player.downed) {
+        let allPossibleMelds = [];
+        let tempHand = [...normal];
+        let tempJokers = [...jokers];
+
+        // חיפוש סדרות עולות (חובה לירידה)
+        let foundRun = true;
+        while(foundRun) {
+            let run = findBestRunForComp(tempHand, tempJokers);
+            if (run) {
+                allPossibleMelds.push(run);
+                const used = run.filter(t => t.v !== 2 && t.type !== 'joker');
+                tempHand = tempHand.filter(t => !used.includes(t));
+                tempJokers.splice(0, run.filter(t => t.v === 2 || t.type === 'joker').length);
+            } else { foundRun = false; }
+        }
+
+        // חיפוש סטים (מספרים זהים)
+        let foundSet = true;
+        while(foundSet) {
+            let set = findBestSetForComp(tempHand, tempJokers);
+            if (set) {
+                allPossibleMelds.push(set);
+                const used = set.filter(t => t.v !== 2 && t.type !== 'joker');
+                tempHand = tempHand.filter(t => !used.includes(t));
+                tempJokers.splice(0, set.filter(t => t.v === 2 || t.type === 'joker').length);
+            } else { foundSet = false; }
+        }
+
+        const totalPoints = allPossibleMelds.reduce((sum, m) => sum + Utils.calcPoints(m, false), 0);
+        const hasRun = allPossibleMelds.some(m => Utils.isValid(m) === 'run');
+
+        if (hasRun && totalPoints >= 30) {
+            player.table = player.table.concat(allPossibleMelds);
+            const allUsedTiles = allPossibleMelds.flat();
+            player.hand = player.hand.filter(t => !allUsedTiles.includes(t));
+            player.downed = true;
+            addLog(`המחשב ירד עם חבילה מרשימה של ${totalPoints} נקודות!`, "comp");
+            return true;
+        }
+        return false;
+    }
+
+    // אסטרטגיה 3: אחרי ירידה - הוספה חופשית לסדרות
+    for (let meld of player.table) {
+        // המחשב ינסה לשמור על קנסטה "נקייה" (אדומה) אם היא כבר כזו
+        const isCurrentlyClean = !meld.some(t => t.v === 2 || t.type === 'joker');
+        
+        for (let i = 0; i < hand.length; i++) {
+            const card = hand[i];
+            const isJoker = (card.v === 2 || card.type === 'joker');
+            
+            // אם הסדרה נקייה, המחשב ימנע מלשים ג'וקר אלא אם זה הקלף ה-7 (השלמת קנסטה)
+            if (isCurrentlyClean && isJoker && meld.length < 6) continue;
+
+            if (Utils.isValid([...meld, card])) {
+                meld.push(hand.splice(i, 1)[0]);
+                addLog("המחשב הוסיף קלף לסדרה.", "comp");
+                
+                // בדיקת קנסטה בהוספה רגילה
+                if (meld.length === 7) {
+                    const isClean = !meld.some(t => t.type === 'joker' || t.v === 2);
+                    showCanastaCelebration(isClean);
+                }
+                return true;
+            }
+        }
+    }
+
+    // אסטרטגיה 4: יצירת סדרות חדשות מהיד (אחרי שכבר ירד)
+    if (player.downed) {
+        let newMeld = findBestRunForComp(normal, jokers) || findBestSetForComp(normal, jokers);
+        if (newMeld) {
+            player.table.push(newMeld);
+            player.hand = player.hand.filter(t => !newMeld.includes(t));
+            addLog("המחשב פתח סדרה חדשה על השולחן.", "comp");
+            
+            if (newMeld.length >= 7) {
+                 const isClean = !newMeld.some(t => t.type === 'joker' || t.v === 2);
+                 showCanastaCelebration(isClean);
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+function findBestSetForComp(tiles, jokers) {
+    let values = {};
+    tiles.forEach(t => { values[t.v] = values[t.v] || []; values[t.v].push(t); });
+    
+    for (let v in values) {
+        // אם יש 3 מאותו סוג - מצוין
+        if (values[v].length >= 3) return values[v].slice(0, 3);
+        // אם יש 2 מאותו סוג + ג'וקר פנוי
+        if (values[v].length === 2 && jokers.length > 0) {
+            return [...values[v], jokers[0]];
+        }
+    }
+    return null;
+}
+function findAllSets(tiles, jokers) {
+    let sets = [];
+    let tempJokers = [...jokers];
+    let workingTiles = [...tiles];
+    
+    // מיון לפי ערך
+    let values = {};
+    workingTiles.forEach(t => { values[t.v] = values[t.v] || []; values[t.v].push(t); });
+    
+    for (let v in values) {
+        // מקרה א': יש שלישייה טבעית
+        if (values[v].length >= 3) {
+            let s = values[v].slice(0, 3);
+            sets.push(s);
+            workingTiles = workingTiles.filter(t => !s.includes(t));
+        } 
+        // מקרה ב': יש זוג + ג'וקר פנוי
+        else if (values[v].length === 2 && tempJokers.length > 0) {
+            let s = [...values[v], tempJokers.pop()];
+            sets.push(s);
+            workingTiles = workingTiles.filter(t => !values[v].includes(t));
+        }
+    }
+    return sets;
+}
+function findMeldsWithJokers(tiles, jokers) {
+    let melds = [];
+    let usedJokers = 0;
+    let workingTiles = [...tiles];
+
+    // 1. חיפוש סטים (זוגות שהופכים לשלישייה עם ג'וקר)
+    let values = {};
+    workingTiles.forEach(t => { values[t.v] = (values[t.v] || []); values[t.v].push(t); });
+    
+    for (let v in values) {
+        if (values[v].length >= 3) {
+            melds.push(values[v].slice(0, 3));
+            workingTiles = workingTiles.filter(t => !values[v].includes(t));
+        } else if (values[v].length === 2 && (jokers.length - usedJokers) > 0) {
+            melds.push([...values[v], jokers[usedJokers]]);
+            usedJokers++;
+            workingTiles = workingTiles.filter(t => !values[v].includes(t));
+        }
+    }
+
+    // 2. חיפוש Runs (רצפים של 2 שהופכים ל-3 עם ג'וקר)
+    const colors = ['red', 'blue', 'black', 'orange'];
+    colors.forEach(color => {
+        let cTiles = workingTiles.filter(t => t.c === color).sort((a,b) => a.v - b.v);
+        for (let i = 0; i < cTiles.length - 1; i++) {
+            let diff = cTiles[i+1].v - cTiles[i].v;
+            if ((diff === 1 || diff === 2) && (jokers.length - usedJokers) > 0) {
+                let newRun = [cTiles[i], cTiles[i+1], jokers[usedJokers]];
+                if (Utils.isValid(newRun) === 'run') {
+                    melds.push(newRun);
+                    usedJokers++;
+                    // הסרת הקלפים שנעשה בהם שימוש
+                }
+            }
+        }
+    });
+
+    return melds;
+}
+
+// פונקציות עזר לאסטרטגיה של המחשב
+function findBestRunForComp(tiles, jokers) {
+    const colors = ['red', 'blue', 'black', 'orange'];
+    
+    for (let color of colors) {
+        let cTiles = tiles.filter(t => t.c === color);
+        if (cTiles.length < 2) continue;
+
+        // המחשב מנסה לבנות רצפים של 3 ממה שיש לו ביד
+        for (let i = 0; i < cTiles.length; i++) {
+            for (let j = i + 1; j < cTiles.length; j++) {
+                // ניסיון עם ג'וקר
+                if (jokers.length > 0) {
+                    let attempt = [cTiles[i], cTiles[j], jokers[0]];
+                    if (Utils.isValid(attempt)) return attempt;
+                }
+                // ניסיון של שלישייה טבעית
+                for (let k = j + 1; k < cTiles.length; k++) {
+                    let attempt = [cTiles[i], cTiles[j], cTiles[k]];
+                    if (Utils.isValid(attempt)) return attempt;
+                }
+            }
+        }
+    }
+    return null;
+}
+
+function findAllSets(tiles) {
+    let sets = [];
+    let values = {};
+    tiles.forEach(t => { values[t.v] = values[t.v] || []; values[t.v].push(t); });
+    for (let v in values) {
+        if (values[v].length >= 3) sets.push(values[v].slice(0, 3));
+    }
+    return sets;
+}
+
+   function compAI() {
+    const c = gameState.players.comp;
+    addLog("--- תור המחשב (מחשב מסלול...) ---", "system");
+
+    // שלב 1: משיכה
+    setTimeout(() => {
+        const top = gameState.discardPile[gameState.discardPile.length - 1];
+        
+        if (top && shouldTakeDiscard(c, top)) {
+            c.hand = c.hand.concat(gameState.discardPile);
+            gameState.discardPile = [];
+            addLog(`המחשב לקח את כל ערימת הזריקה!`, "comp");
+        } else {
+            const t = gameState.deck.pop();
+            if (t) {
+                c.hand.push(t);
+                addLog("המחשב משך מהקופה.", "comp");
+            }
+        }
+        render();
+
+        // שלב 2: הורדות (Meld)
+        setTimeout(() => {
+            let madeMove = true;
+            let safety = 0;
+            while(madeMove && safety < 10) {
+                madeMove = tryToMeldForComp(c);
+                safety++;
+            }
+            render();
+
+            // שלב 3: זריקה והעברת תור
+            setTimeout(() => {
+                if (c.hand.length > 0) {
+                    let bestCardIndex = -1;
+                    let lowestRisk = 1000;
+
+                    c.hand.forEach((card, index) => {
+                        let risk = 0;
+                        if (card.v === 2 || card.type === 'joker') risk += 800;
+
+                        gameState.players.user.table.forEach(meld => {
+                            if (Utils.isValid([...meld, card])) risk += 50;
+                        });
+
+                        const matchesInCompHand = c.hand.filter(t => t.v === card.v).length;
+                        if (matchesInCompHand > 1) risk += 20;
+
+                        if (risk < lowestRisk) {
+                            lowestRisk = risk;
+                            bestCardIndex = index;
+                        }
+                    });
+                    // --- כאן בדיוק תשים את הקוד החדש! ---
+                    // זהו "תיקון חירום" למורטו: אם נשארו 2 קלפים, אל תזרוק ג'וקר!
+                    if (c.hand.length === 2 && !c.mortoTaken) {
+                        const nonJokerIndex = c.hand.findIndex(t => t.v !== 2 && t.type !== 'joker');
+                        if (nonJokerIndex !== -1) {
+                            bestCardIndex = nonJokerIndex;
+                        }
+                    }
+
+                    if (bestCardIndex === -1) bestCardIndex = 0;
+
+                    const discardCandidate = c.hand.splice(bestCardIndex, 1)[0];
+                    gameState.discardPile.push(discardCandidate);
+                    addLog(`המחשב זרק ${Utils.getTileName(discardCandidate)}.`, "comp");
+
+                    // בדיקת ניצחון/מורטו
+                    if (c.hand.length === 0) {
+                        if (c.mortoTaken && c.table.some(m => m.length >= 7)) {
+                            checkGameOver('comp');
+                            return; 
+                        } else if (!c.mortoTaken) {
+                            takeMorto('comp', false);
+                        }
+                    }
+                }
+                
+                // העברת תור סופית
+                gameState.turn = 'user';
+                gameState.hasDrawn = false;
+                addLog("תורך! משוך קלף.", "system");
+                render();
+                
+            }, 1000);
+        }, 1000);
+    }, 1000);
+}
+function shouldTakeDiscard(player, topCard) {
+    if (!topCard) return false;
+    const hand = player.hand;
+    const rand = Math.random(); // מספר בין 0 ל-1 להחלטה אקראית
+
+    // 1. מצב חירום/הזדמנות פז: זוג תואם ביד (90% סיכוי שייקח)
+    const matchesInHand = hand.filter(t => t.v === topCard.v).length;
+    if (matchesInHand >= 2) {
+        return rand < 0.9; 
+    }
+
+    // 2. השלמת קנסטה: הקלף משלים סדרה של 5 או 6 קלפים (80% סיכוי שייקח)
+    for (let meld of player.table) {
+        if (Utils.isValid([...meld, topCard])) {
+            if (meld.length >= 5) return rand < 0.8;
+            
+            // 3. סתם התאמה לסדרה קיימת כשהוא כבר "ירד" (רק 40% סיכוי - שלא יהיה חמדן מדי)
+            if (player.downed) return rand < 0.4;
+        }
+    }
+
+    // 4. עזרה לירידה ראשונה: (60% סיכוי שייקח אם זה ממש עוזר לו לבנות רצף)
+    if (!player.downed) {
+        const potentialHand = [...hand, topCard];
+        const sameColor = potentialHand.filter(t => t.c === topCard.c && t.type === 'num');
+        if (sameColor.length >= 3) {
+            // בדיקה אם נוצר רצף חוקי עם הקלף החדש
+            if (Utils.isValid(sameColor) === 'run') return rand < 0.6;
+        }
+    }
+
+    // בברירת מחדל - לא לוקח
+    return false;
+}
+
+function showCanastaCelebration(isRed) {
+    const el = document.getElementById('canasta-announcement');
+    el.className = isRed ? 'canasta-toast toast-red' : 'canasta-toast toast-black';
+    el.innerHTML = isRed ? '🔥 קנסטה אדומה! 🔥<br><span style="font-size:1.5rem">200 נקודות בונוס</span>' 
+                         : '🃏 קנסטה שחורה! 🃏<br><span style="font-size:1.5rem">100 נקודות בונוס</span>';
+    
+    el.style.display = 'block';
+    
+    // יצירת אפקט "קונפטי" קטן בלוג (אופציונלי)
+    addLog(isRed ? "🎉 מדהים! יצרת קנסטה אדומה נקייה!" : "👏 יפה! יצרת קנסטה מעורבת.", "system");
+
+    setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 1s';
+        setTimeout(() => {
+            el.style.display = 'none';
+            el.style.opacity = '1'; // איפוס לשעם הבאה
+        }, 1000);
+    }, 2500);
+}
+function showCelebration(text, color = "var(--gold)") {
+    const toast = document.getElementById('game-toast');
+    const toastTxt = document.getElementById('toast-text');
+    
+    toast.style.display = 'none'; // איפוס
+    void toast.offsetWidth;      // "טריק" לגרום לדפדפן לרנדר מחדש את האלמנט
+    
+    toastTxt.innerText = text;
+    toastTxt.style.color = color;
+    toast.style.display = 'block';
+    
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 2000);
+}
+// יצירת חדר חדש
+// יצירת חדר חדש
+function createOnlineRoom() {
+    const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+    currentRoomId = roomId;
+    myRole = 'player1';
+    isOnline = true;
+    
+    const name = document.getElementById('username-input').value.trim() || "שחקן 1";
+
+    // 1. קודם כל - מעבר למסך המשחק
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('game-container').style.display = 'grid';
+
+    // 2. עדכון שם השחקן ב-UI
+    const pNameEl = document.getElementById('p-name');
+    if (pNameEl) pNameEl.innerText = name;
+
+    // 3. אתחול המשחק (זה יקרא ל-render שימצא עכשיו את האלמנטים)
+    initGame(); 
+
+    // 4. עדכון מספר החדר בתצוגה (אחרי initGame כדי לוודא שזה לא נדרס)
+    const roomDisplay = document.getElementById('display-room-id');
+    if (roomDisplay) roomDisplay.innerText = roomId;
+
+    addLog(`החדר נוצר! מספר החדר: ${roomId}`, "system");
+    addLog("מחכה להצטרפות השחקן השני...", "system");
+
+    // 5. כתיבת המידע ל-Firebase
+    db.ref('rooms/' + roomId).set({
+        gameState: gameState,
+        player1Name: name,
+        player2Name: "ממתין...",
+        status: 'waiting'
+    }).then(() => {
+        listenToRoom(roomId);
+    }).catch((error) => {
+        console.error("שגיאה ביצירת חדר:", error);
+        alert("נכשל ביצירת חדר בשרת.");
+    });
+}
+
+function joinOnlineRoom() {
+    const roomId = document.getElementById('room-id-input').value.trim();
+    if (!roomId) return alert("נא להזין קוד חדר");
+
+    const name = document.getElementById('username-input').value.trim() || "שחקן 2";
+
+    db.ref('rooms/' + roomId).once('value', (snapshot) => {
+        if (!snapshot.exists()) return alert("חדר לא נמצא!");
+        
+        currentRoomId = roomId;
+        myRole = 'player2';
+        isOnline = true;
+        
+        document.getElementById('p-name').innerText = name;
+
+        // עדכון הסטטוס ל-playing וקביעת התור ההתחלתי ל-player1
+        db.ref('rooms/' + roomId).update({
+            player2Name: name,
+            status: 'playing',
+            "gameState/turn": 'player1' // מוודא ששחקן 1 מתחיל
+        }).then(() => {
+            listenToRoom(roomId);
+        });
+    });
+}
+function listenToRoom(roomId) {
+    db.ref('rooms/' + roomId).on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        console.log("Update received from Firebase:", data);
+
+        // 1. טיפול במעבר למסך משחק ורישום לוג הצטרפות (פעם אחת בלבד)
+        if (data.status === 'playing') {
+            // אם עוד לא רשמנו בלוג שהיריב הצטרף
+            if (!gameState.opponentJoinedLogDone) {
+                const opponentName = (myRole === 'player1') ? data.player2Name : data.player1Name;
+                addLog(`השחקן ${opponentName} הצטרף! המשחק מתחיל.`, "system");
+                gameState.opponentJoinedLogDone = true;
+            }
+
+            // סגירת תפריט אם הוא עדיין פתוח
+            if (document.getElementById('main-menu').style.display !== 'none') {
+                document.getElementById('main-menu').style.display = 'none';
+                document.getElementById('game-container').style.display = 'grid';
+            }
+        }
+
+        // 2. עדכון נתוני המשחק עצמם
+        if (!data.gameState) return;
+        const remoteGS = data.gameState;
+
+        // מיפוי נכון של השחקנים לפי התפקיד (שחקן 1 מול שחקן 2)
+        // מיפוי נכון של השחקנים לפי התפקיד (שחקן 1 מול שחקן 2)
+        if (myRole === 'player1') {
+            // שחקן 1 מעדכן ישירות מהשדות התואמים בענן
+            gameState.players.user.hand = remoteGS.players.user.hand || [];
+            gameState.players.user.table = remoteGS.players.user.table || [];
+            gameState.players.user.downed = remoteGS.players.user.downed || false;
+            gameState.players.user.mortoTaken = remoteGS.players.user.mortoTaken || false;
+
+            gameState.players.comp.hand = remoteGS.players.comp.hand || [];
+            gameState.players.comp.table = remoteGS.players.comp.table || [];
+            
+            gameState.turn = (remoteGS.turn === 'player1') ? 'user' : 'comp';
+        } else {
+            // שחקן 2 רואה את 'comp' מהענן בתור ה-'user' שלו
+            gameState.players.user.hand = remoteGS.players.comp.hand || [];
+            gameState.players.user.table = remoteGS.players.comp.table || [];
+            gameState.players.user.downed = remoteGS.players.comp.downed || false;
+            gameState.players.user.mortoTaken = remoteGS.players.comp.mortoTaken || false;
+
+            gameState.players.comp.hand = remoteGS.players.user.hand || [];
+            gameState.players.comp.table = remoteGS.players.user.table || [];
+            
+            gameState.turn = (remoteGS.turn === 'player2') ? 'user' : 'comp';
+        }
+        // עדכון נתונים גלובליים
+        gameState.deck = remoteGS.deck || [];
+        gameState.discardPile = remoteGS.discardPile || [];
+        gameState.hasDrawn = remoteGS.hasDrawn || false;
+// תיקון: וודא שהמשתנים המקומיים לא נמחקים בעת עדכון מהענן
+        if (gameState.currentTurnMelds === undefined) gameState.currentTurnMelds = [];
+        if (gameState.selectedIndices === undefined) gameState.selectedIndices = [];
+        render();
+    });
+}
+// פונקציית עזר לעדכון הענן אחרי כל מהלך
+function syncToCloud() {
+    if (!isOnline || !currentRoomId) return;
+    
+    // יצירת עותק נקי ולוודא שאין undefined בשדות הקריטיים
+    let updateState = {
+        deck: gameState.deck || [],
+        discardPile: gameState.discardPile || [],
+        hasDrawn: gameState.hasDrawn,
+        turn: "", // יקבע בהמשך
+        players: {
+            user: {
+                hand: gameState.players.user.hand || [],
+                table: gameState.players.user.table || [],
+                downed: gameState.players.user.downed || false,
+                mortoTaken: gameState.players.user.mortoTaken || false
+            },
+            comp: {
+                hand: gameState.players.comp.hand || [],
+                table: gameState.players.comp.table || [],
+                downed: gameState.players.comp.downed || false,
+                mortoTaken: gameState.players.comp.mortoTaken || false
+            }
+        }
+    };
+    
+    if (myRole === 'player2') {
+        updateState.players.user = gameState.players.comp;
+        updateState.players.comp = gameState.players.user;
+        // אם תורי (user), אז בענן זה player2
+        updateState.turn = (gameState.turn === 'user') ? 'player2' : 'player1';
+    } else {
+        // אם אני player1 ותורי (user), אז בענן זה player1
+        updateState.turn = (gameState.turn === 'user') ? 'player1' : 'player2';
+    }
+
+    db.ref('rooms/' + currentRoomId + '/gameState').set(updateState);
+}
+</script>
+</body>
+</html>
