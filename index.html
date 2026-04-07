@@ -2,7 +2,8 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>קנסטה רמיקוב - גרסה יציבה 2026</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>קנסטה רמיקוב</title>
     <style>
         :root { --tile-bg: #fdf5e6; --blue: #007bff; --red: #dc3545; --black: #333; --orange: #ff8c00; --gold: #ffee58; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a4a1d; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
@@ -189,6 +190,46 @@
     right: 10px; /* נקודת התחלה מימין */
     transition: all 0.2s;
 }
+
+/* התאמות למובייל */
+@media (max-width: 768px) {
+    #game-container {
+        grid-template-columns: 1fr; /* ביטול העמודות - הלוג עובר למעלה/למטה */
+        height: auto;
+        overflow-y: auto;
+    }
+
+    #side-bar {
+        width: 100%;
+        height: 150px; /* צמצום הלוג כדי שלא יתפוס את כל המסך */
+        order: 10; /* מעביר את הלוג לתחתית המשחק */
+    }
+
+    .tile {
+        width: 45px; /* הגדלת הקלפים למגע אצבע */
+        height: 65px;
+        font-size: 1.2rem;
+    }
+
+    .menu-card h1 {
+        font-size: 2rem; /* הקטנת הכותרת בתפריט שלא תגלוש */
+    }
+
+    .status-bar {
+        flex-direction: column; /* סידור נתוני השחקנים אחד מתחת לשני */
+        gap: 5px;
+        font-size: 0.9rem;
+    }
+
+    .btn {
+        padding: 15px 10px; /* כפתורים גדולים יותר שיהיה קל ללחוץ */
+        font-size: 1rem;
+    }
+    
+    #game-area {
+        padding: 5px;
+    }
+}
         
         .btn { background: #fff; color: #1a4a1d; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; transition: 0.2s; }
         .btn:hover:not(:disabled) { background: var(--gold); }
@@ -319,7 +360,31 @@
         <button class="btn" style="margin-top:20px" onclick="toggleModal('leaderboard-modal', false)">סגור</button>
     </div>
 </div>
+<div id="room-created-modal" class="custom-modal">
+    <div class="modal-content menu-card">
+        <h2 style="color: var(--gold);">🎊 חדר חדש נפתח!</h2>
+        <p>מספר החדר שלך הוא:</p>
+        
+        <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0;">
+            <div id="modal-room-number" style="font-size: 3.5rem; font-weight: 900; color: var(--gold);">----</div>
+            <button class="btn" onclick="copyRoomNumber()" title="העתק מספר" style="padding: 10px; background: rgba(255,255,255,0.1); color: white; border: 1px solid var(--gold);">
+                📋 העתק
+            </button>
+        </div>
 
+        <p style="color: rgba(255,255,255,0.8);">שלח את המספר הזה לשחקן השני כדי שיוכל להצטרף אליך.</p>
+        <button class="btn-main" style="width: 100%; margin-top: 20px; font-size: 1.2rem;" onclick="confirmRoomCreation()">הבנתי, בואו נתחיל!</button>
+    </div>
+</div>
+<div id="aviel-modal" class="custom-modal">
+    <div class="modal-content menu-card" style="border-color: #ff5252 !important;">
+        <h2 style="color: #ff5252;">הודעה מערכת חשובה ⚠️</h2>
+        <p id="aviel-msg-text" style="font-size: 1.5rem; margin: 20px 0;"></p>
+        <button class="btn-main" style="background: #4fc3f7; width: 100%;" onclick="toggleModal('aviel-modal', false)">
+            מצחיק מאוד מתנאל, תן לי לשחק
+        </button>
+    </div>
+</div>
 <div id="game-container">
     <div id="side-bar">
         <div style="padding:15px; background:#222; text-align:center; color:gold; font-weight:bold;">לוג משחק</div>
@@ -366,7 +431,8 @@
     		<button class="btn" id="meld-btn" onclick="createNewMeld()">הורד סדרה</button>
     		<button class="btn" id="reset-btn" style="background:#ff9800; color:white" onclick="resetTurnMelds()">חזור לתחילת התור</button> 
     		<button class="btn" id="finish-btn" onclick="finishTurn()">זרוק קלף</button>
-	    </div>
+    		<button class="btn" style="background:#f44336; color:white; margin-top:10px;" onclick="quitGame()">🚪 צא מהמשחק</button>
+		</div>
     </div>
 </div>
 <div id="game-toast" style="display: none; position: fixed; top: 25%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; pointer-events: none;">
@@ -517,18 +583,14 @@
     const finalName = nameInput || "שחקן 1";
     
     document.getElementById('p-name').innerText = finalName;
+    if (finalName === "אביאל") {
+        document.getElementById('aviel-msg-text').innerText = "למה אתה משחק קנסטה? אהה כי אין סקי אוי אוי🎿";
+        toggleModal('aviel-modal', true);
+        // אנחנו לא עוצרים את המשחק, רק מראים את החלון מעל
+    }
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('game-container').style.display = 'grid';
-    
-    // אתחול המשחק
     initGame();
-
-    // הבדיקה המיוחדת עבור אביאל
-    if (finalName === "אביאל") {
-        setTimeout(() => {
-            showCelebration("למה אתה משחק קנסטה? אהה כי אין סקי אוי אוי🎿", "#ff5252");
-        }, 1500);
-    }
 }
 
   function initGame() {
@@ -1450,6 +1512,27 @@ function showCelebration(text, color = "var(--gold)") {
 }
 // יצירת חדר חדש
 // יצירת חדר חדש
+function copyRoomNumber() {
+    const roomNum = document.getElementById('modal-room-number').innerText;
+    
+    // שימוש ב-API של הדפדפן להעתקה ללוח (Clipboard)
+    navigator.clipboard.writeText(roomNum).then(() => {
+        // שינוי זמני של הטקסט בכפתור כדי לתת אישור למשתמש
+        const copyBtn = event.target;
+        const originalText = copyBtn.innerText;
+        copyBtn.innerText = "✅ הועתק!";
+        copyBtn.style.color = "#4caf50";
+        
+        setTimeout(() => {
+            copyBtn.innerText = originalText;
+            copyBtn.style.color = "white";
+        }, 2000);
+    }).catch(err => {
+        console.error('שגיאה בהעתקה: ', err);
+        alert("לא הצלחנו להעתיק אוטומטית. המספר הוא: " + roomNum);
+    });
+}
+
 function createOnlineRoom() {
     const roomId = Math.floor(1000 + Math.random() * 9000).toString();
     currentRoomId = roomId;
@@ -1458,25 +1541,16 @@ function createOnlineRoom() {
     
     const name = document.getElementById('username-input').value.trim() || "שחקן 1";
 
-    // 1. קודם כל - מעבר למסך המשחק
-    document.getElementById('main-menu').style.display = 'none';
-    document.getElementById('game-container').style.display = 'grid';
+    // הצגת מספר החדר במודאל ופתיחתו (במקום לעבור למשחק)
+    const roomNumEl = document.getElementById('modal-room-number');
+    if (roomNumEl) roomNumEl.innerText = roomId;
+    toggleModal('room-created-modal', true);
 
-    // 2. עדכון שם השחקן ב-UI
+    // עדכון שם השחקן ב-UI (למקרה שהמשתמש יראה את הרקע)
     const pNameEl = document.getElementById('p-name');
     if (pNameEl) pNameEl.innerText = name;
 
-    // 3. אתחול המשחק (זה יקרא ל-render שימצא עכשיו את האלמנטים)
-    initGame(); 
-
-    // 4. עדכון מספר החדר בתצוגה (אחרי initGame כדי לוודא שזה לא נדרס)
-    const roomDisplay = document.getElementById('display-room-id');
-    if (roomDisplay) roomDisplay.innerText = roomId;
-
-    addLog(`החדר נוצר! מספר החדר: ${roomId}`, "system");
-    addLog("מחכה להצטרפות השחקן השני...", "system");
-
-    // 5. כתיבת המידע ל-Firebase
+    // כתיבת המידע ל-Firebase כרגיל
     db.ref('rooms/' + roomId).set({
         gameState: gameState,
         player1Name: name,
@@ -1489,13 +1563,35 @@ function createOnlineRoom() {
         alert("נכשל ביצירת חדר בשרת.");
     });
 }
+function confirmRoomCreation() {
+    // 1. סגירת המודאל
+    toggleModal('room-created-modal', false);
 
+    // 2. מעבר למסך המשחק
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('game-container').style.display = 'grid';
+
+    // 3. אתחול המשחק
+    initGame(); 
+
+    // 4. עדכון מספר החדר בתצוגה
+    const roomDisplay = document.getElementById('display-room-id');
+    if (roomDisplay) roomDisplay.innerText = currentRoomId;
+
+    addLog(`החדר נוצר! מספר החדר: ${currentRoomId}`, "system");
+    addLog("מחכה להצטרפות השחקן השני...", "system");
+    
+    render();
+}
 function joinOnlineRoom() {
     const roomId = document.getElementById('room-id-input').value.trim();
     if (!roomId) return alert("נא להזין קוד חדר");
 
     const name = document.getElementById('username-input').value.trim() || "שחקן 2";
-
+	if (name === "אביאל") {
+        document.getElementById('aviel-msg-text').innerText = "למה אתה משחק קנסטה? אהה כי אין סקי אוי אוי🎿";
+        toggleModal('aviel-modal', true);
+    }
     db.ref('rooms/' + roomId).once('value', (snapshot) => {
         if (!snapshot.exists()) return alert("חדר לא נמצא!");
         
@@ -1521,7 +1617,16 @@ function listenToRoom(roomId) {
         if (!data) return;
 
         console.log("Update received from Firebase:", data);
-
+		
+		if (data.status === 'player_quit') {
+            // אם אני לא זה שיצא (כי השם שלי שונה מהקוויטר)
+            const myName = document.getElementById('p-name').innerText;
+            if (data.quitter !== myName) {
+                alert(`השחקן ${data.quitter} יצא מהמשחק. נחזיר אותך לתפריט הראשי.`);
+                location.reload();
+            }
+            return;
+        }
         // 1. טיפול במעבר למסך משחק ורישום לוג הצטרפות (פעם אחת בלבד)
         if (data.status === 'playing') {
             // אם עוד לא רשמנו בלוג שהיריב הצטרף
@@ -1576,6 +1681,23 @@ function listenToRoom(roomId) {
         if (gameState.selectedIndices === undefined) gameState.selectedIndices = [];
         render();
     });
+}
+
+function quitGame() {
+    if (!confirm("האם אתה בטוח שברצונך לצאת מהמשחק?")) return;
+
+    if (isOnline && currentRoomId) {
+        // מעדכן ב-Firebase שמישהו יצא
+        const myName = document.getElementById('p-name').innerText;
+        db.ref('rooms/' + currentRoomId).update({
+            status: 'player_quit',
+            quitter: myName
+        }).then(() => {
+            location.reload(); // חוזר לתפריט הראשי
+        });
+    } else {
+        location.reload(); // במשחק נגד מחשב פשוט מרעננים
+    }
 }
 // פונקציית עזר לעדכון הענן אחרי כל מהלך
 function syncToCloud() {
