@@ -784,22 +784,26 @@ function takeMorto(pKey, isDirecto) {
         summary.innerHTML = `הניקוד שלך: ${uTotal}<br>ניקוד המחשב: ${cTotal}<br><br><b>הפרש סופי: ${diff} נקודות</b>`;
     }
 
-   function finishTurn() {
+function finishTurn() {
     const p = gameState.players.user;
     
+    // דיבאג: בדיקת מצב השחקן לפני סיום התור
+    console.log("--- Debug Finish Turn ---");
+    console.log("Hand length:", p.hand.length);
+    console.log("Morto already taken?", p.mortoTaken);
+    console.log("Has Canasta?", p.table.some(m => m.length >= 7));
+    console.log("Selected index for discard:", gameState.selectedIndices[0]);
+
     if (gameState.selectedIndices.length !== 1) {
         alert("בחר קלף אחד לזריקה כדי לסיים את התור.");
         return;
     }
 
-    // תיקון לוגי: בודקים תנאי ירידה ראשונה רק אם השולחן היה ריק לפני התור הזה
-    // אנחנו בודקים את אורך השולחן פחות הסדרות שהורדו בתור הנוכחי
+    // לוגיקת ירידה ראשונה (נשארת ללא שינוי)
     const tableBeforeThisTurnCount = p.table.length - gameState.currentTurnMelds.length;
-
     if (tableBeforeThisTurnCount === 0 && gameState.currentTurnMelds.length > 0) {
         let totalPoints = 0;
         let hasRun = false;
-        
         gameState.currentTurnMelds.forEach(meld => {
             totalPoints += Utils.calcPoints(meld, false);
             if (Utils.isValid(meld) === 'run') hasRun = true;
@@ -811,36 +815,44 @@ function takeMorto(pKey, isDirecto) {
         }
         p.downed = true; 
     } else {
-        // אם כבר היו סדרות על השולחן, אנחנו מוודאים ש-downed מסומן כ-true
         p.downed = true;
     }
 
-    // ביצוע הזריקה
+    // ביצוע הזריקה הפיזית
     const t = p.hand.splice(gameState.selectedIndices[0], 1)[0];
     gameState.discardPile.push(t);
     addLog(`זרקת ${Utils.getTileName(t)}.`, "user");
 
-   // בדיקות מורטו וניצחון - בדוק לניצחון קודם
-if (p.hand.length === 0 && p.mortoTaken && p.table.some(m => m.length >= 7)) {
-    // השחקן סיים את המורטו שלו והוא בעל קנסטה - הוא ניצח!
-    checkGameOver('user');
-    return;
-} else if (p.hand.length === 0 && !p.mortoTaken) {
-    // השחקן ריקן את היד אבל עדיין לא לקח את המורטו
-    p.mortoTaken = true;
-    for (let i = 0; i < 11; i++) {
-        if (gameState.deck.length > 0) p.hand.push(gameState.deck.pop());
+    // --- בדיקת ניצחון/מורטו קריטית ---
+    
+    // 1. בדיקת ניצחון: יד ריקה + כבר לקח מורטו בעבר + יש קנסטה
+    if (p.hand.length === 0 && p.mortoTaken === true) {
+        if (p.table.some(m => m.length >= 7)) {
+            console.log("Victory condition met!");
+            checkGameOver('user');
+            syncToCloud(); // עדכון אחרון לענן
+            return;
+        } else {
+            addLog("לא ניתן לסיים משחק ללא קנסטה!", "system");
+        }
+    } 
+    // 2. בדיקת מורטו רגיל (רק אם לא לקח מעולם)
+    else if (p.hand.length === 0 && p.mortoTaken === false) {
+        console.log("Taking Morto now...");
+        p.mortoTaken = true;
+        for (let i = 0; i < 11; i++) {
+            if (gameState.deck.length > 0) p.hand.push(gameState.deck.pop());
+        }
+        showCelebration("מורטו! 🃏", "#4fc3f7"); 
+        addLog("לקחת מורטו! התור עובר.", "system");
     }
-    showCelebration("מורטו! 🃏", "#4fc3f7"); 
-    addLog("לקחת מורטו! התור עובר.", "system");
-}
+
     // איפוס משתני תור והעברת תור
     gameState.currentTurnMelds = [];
     gameState.originalHandBeforeMeld = null;
     gameState.selectedIndices = [];
     gameState.hasDrawn = false;
     
-    // באונליין התור עובר ליריב, באופליין למחשב
     gameState.turn = isOnline ? (myRole === 'player1' ? 'player2' : 'player1') : 'comp';
     
     render();
@@ -1473,7 +1485,7 @@ function showCanastaCelebration(isRed) {
     const el = document.getElementById('canasta-announcement');
     el.className = isRed ? 'canasta-toast toast-red' : 'canasta-toast toast-black';
     el.innerHTML = isRed ? '🔥 קנסטה אדומה! 🔥<br><span style="font-size:1.5rem">200 נקודות בונוס</span>' 
-                         : '🃏 קנסטה שחורה! 🃏<br><span style="font-size:1.5rem">100 נקודות בונוס</span>';
+                         : '🃏 קנסטה ! 🃏<br><span style="font-size:1.5rem">100 נקודות בונוס</span>';
     
     el.style.display = 'block';
     
