@@ -386,24 +386,26 @@ body.opponent-turn {
 
         
 
-        #discard-area { 
-
-    display: block; 
-
-    position: relative;
-
+  #discard-area { 
+    display: flex; 
+    flex-wrap: wrap; /* מאפשר לקלפים לרדת שורה */
+    gap: 5px; /* רווח קטן בין הקלפים */
     min-height: 80px; 
-
+    max-height: 200px; /* הגבלת גובה כדי שלא יתפוס את כל המסך */
+    overflow-y: auto; /* הוספת גלילה במידה ויש המון קלפים */
     border: 2px dashed rgba(255,255,255,0.1); 
-
     border-radius: 8px; 
-
     padding: 10px;
-
     margin-bottom: 20px;
+    direction: rtl;
+    background: rgba(0,0,0,0.2);
+}
 
-    direction: rtl; /* מבטיח כיווניות מימין לשמאל */
-
+/* ביטול המיקום האבסולוטי שהיה קודם */
+#discard-area .tile {
+    position: static !important; /* מחזיר לסידור רגיל בתוך Flex */
+    margin: 2px;
+    transform: scale(0.9); /* הקטנה קלה כדי שיכנסו יותר קלפים */
 }
 
 #game-toast {
@@ -473,17 +475,6 @@ body.opponent-turn {
     #game-area { padding: 5px !important; }
 
 }
-
-#discard-area .tile {
-
-    position: absolute;
-
-    right: 10px; /* נקודת התחלה מימין */
-
-    transition: all 0.2s;
-
-}
-
         
 
         .btn { background: #fff; color: #1a4a1d; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; transition: 0.2s; }
@@ -1972,18 +1963,15 @@ function finishTurn() {
 
     d.innerHTML = '';
 
-    gameState.discardPile.slice(-10).forEach((t, idx) => {
-
+   // מציג את כל הקלפים בערימה (ללא slice)
+    gameState.discardPile.forEach((t) => {
         const el = createTileUI(t);
-
-        el.style.right = (idx * 25) + "px";
-
-        el.style.zIndex = idx;
-
+        // אין צורך בחישובי zIndex או right, ה-Flexbox עושה הכל
         d.appendChild(el);
-
     });
 
+    // גלילה אוטומטית לסוף (כדי לראות תמיד את הקלף האחרון שנזרק)
+    d.scrollTop = d.scrollHeight;
 
 
     renderTable('user-melds', u.table);
