@@ -784,27 +784,22 @@ function takeMorto(pKey, isDirecto) {
         summary.innerHTML = `הניקוד שלך: ${uTotal}<br>ניקוד המחשב: ${cTotal}<br><br><b>הפרש סופי: ${diff} נקודות</b>`;
     }
 
-function finishTurn() {
+   function finishTurn() {
     const p = gameState.players.user;
-    // לוג פנימי לתוך ה-Sidebar כדי שתראה את זה בנייד/במסך
-    addLog(`דיבאג: יד=${p.hand.length}, מורטו=${p.mortoTaken}, קנסטה=${p.table.some(m => m.length >= 7)}`, "system");
-    // דיבאג: בדיקת מצב השחקן לפני סיום התור
-    console.log("--- Debug Finish Turn ---");
-    console.log("Hand length:", p.hand.length);
-    console.log("Morto already taken?", p.mortoTaken);
-    console.log("Has Canasta?", p.table.some(m => m.length >= 7));
-    console.log("Selected index for discard:", gameState.selectedIndices[0]);
-
+    
     if (gameState.selectedIndices.length !== 1) {
         alert("בחר קלף אחד לזריקה כדי לסיים את התור.");
         return;
     }
 
-    // לוגיקת ירידה ראשונה (נשארת ללא שינוי)
+    // תיקון לוגי: בודקים תנאי ירידה ראשונה רק אם השולחן היה ריק לפני התור הזה
+    // אנחנו בודקים את אורך השולחן פחות הסדרות שהורדו בתור הנוכחי
     const tableBeforeThisTurnCount = p.table.length - gameState.currentTurnMelds.length;
+
     if (tableBeforeThisTurnCount === 0 && gameState.currentTurnMelds.length > 0) {
         let totalPoints = 0;
         let hasRun = false;
+        
         gameState.currentTurnMelds.forEach(meld => {
             totalPoints += Utils.calcPoints(meld, false);
             if (Utils.isValid(meld) === 'run') hasRun = true;
@@ -816,44 +811,36 @@ function finishTurn() {
         }
         p.downed = true; 
     } else {
+        // אם כבר היו סדרות על השולחן, אנחנו מוודאים ש-downed מסומן כ-true
         p.downed = true;
     }
 
-    // ביצוע הזריקה הפיזית
+    // ביצוע הזריקה
     const t = p.hand.splice(gameState.selectedIndices[0], 1)[0];
     gameState.discardPile.push(t);
     addLog(`זרקת ${Utils.getTileName(t)}.`, "user");
 
-    // --- בדיקת ניצחון/מורטו קריטית ---
-    
-    // 1. בדיקת ניצחון: יד ריקה + כבר לקח מורטו בעבר + יש קנסטה
-    if (p.hand.length === 0 && p.mortoTaken === true) {
-        if (p.table.some(m => m.length >= 7)) {
-            console.log("Victory condition met!");
-            checkGameOver('user');
-            syncToCloud(); // עדכון אחרון לענן
-            return;
-        } else {
-            addLog("לא ניתן לסיים משחק ללא קנסטה!", "system");
-        }
-    } 
-    // 2. בדיקת מורטו רגיל (רק אם לא לקח מעולם)
-    else if (p.hand.length === 0 && p.mortoTaken === false) {
-        console.log("Taking Morto now...");
-        p.mortoTaken = true;
-        for (let i = 0; i < 11; i++) {
-            if (gameState.deck.length > 0) p.hand.push(gameState.deck.pop());
-        }
-        showCelebration("מורטו! 🃏", "#4fc3f7"); 
-        addLog("לקחת מורטו! התור עובר.", "system");
+   // בדיקות מורטו וניצחון - בדוק לניצחון קודם
+if (p.hand.length === 0 && p.mortoTaken && p.table.some(m => m.length >= 7)) {
+    // השחקן סיים את המורטו שלו והוא בעל קנסטה - הוא ניצח!
+    checkGameOver('user');
+    return;
+} else if (p.hand.length === 0 && !p.mortoTaken) {
+    // השחקן ריקן את היד אבל עדיין לא לקח את המורטו
+    p.mortoTaken = true;
+    for (let i = 0; i < 11; i++) {
+        if (gameState.deck.length > 0) p.hand.push(gameState.deck.pop());
     }
-
+    showCelebration("מורטו! 🃏", "#4fc3f7"); 
+    addLog("לקחת מורטו! התור עובר.", "system");
+}
     // איפוס משתני תור והעברת תור
     gameState.currentTurnMelds = [];
     gameState.originalHandBeforeMeld = null;
     gameState.selectedIndices = [];
     gameState.hasDrawn = false;
     
+    // באונליין התור עובר ליריב, באופליין למחשב
     gameState.turn = isOnline ? (myRole === 'player1' ? 'player2' : 'player1') : 'comp';
     
     render();
@@ -1486,7 +1473,7 @@ function showCanastaCelebration(isRed) {
     const el = document.getElementById('canasta-announcement');
     el.className = isRed ? 'canasta-toast toast-red' : 'canasta-toast toast-black';
     el.innerHTML = isRed ? '🔥 קנסטה אדומה! 🔥<br><span style="font-size:1.5rem">200 נקודות בונוס</span>' 
-                         : '🃏 קנסטה ! 🃏<br><span style="font-size:1.5rem">100 נקודות בונוס</span>';
+                         : '🃏 קנסטה שחורה! 🃏<br><span style="font-size:1.5rem">100 נקודות בונוס</span>';
     
     el.style.display = 'block';
     
@@ -1625,12 +1612,8 @@ function listenToRoom(roomId) {
 
             gameState.players.comp.hand = remoteGS.players.comp.hand || [];
             gameState.players.comp.table = remoteGS.players.comp.table || [];
-
+            
             gameState.turn = (remoteGS.turn === 'player1') ? 'user' : 'comp';
-
-
-
-
         } else {
             // שחקן 2 רואה את 'comp' מהענן בתור ה-'user' שלו
             gameState.players.user.hand = remoteGS.players.comp.hand || [];
@@ -1640,10 +1623,8 @@ function listenToRoom(roomId) {
 
             gameState.players.comp.hand = remoteGS.players.user.hand || [];
             gameState.players.comp.table = remoteGS.players.user.table || [];
-
+            
             gameState.turn = (remoteGS.turn === 'player2') ? 'user' : 'comp';
-
-
         }
         // עדכון נתונים גלובליים
         gameState.deck = remoteGS.deck || [];
@@ -1658,20 +1639,40 @@ function listenToRoom(roomId) {
 // פונקציית עזר לעדכון הענן אחרי כל מהלך
 function syncToCloud() {
     if (!isOnline || !currentRoomId) return;
-
-    const myPath = (myRole === 'player1') ? 'user' : 'comp';
-    const updates = {};
-
-    // עדכון רק של השחקן שלי - לא נוגע בשחקן השני!
-    updates[`gameState/players/${myPath}`] = gameState.players.user;
     
-    // עדכון נתונים משותפים
-    updates['gameState/deck'] = gameState.deck;
-    updates['gameState/discardPile'] = gameState.discardPile;
-    updates['gameState/hasDrawn'] = gameState.hasDrawn;
-    updates['gameState/turn'] = (gameState.turn === 'user') ? myRole : (myRole === 'player1' ? 'player2' : 'player1');
+    // יצירת עותק נקי ולוודא שאין undefined בשדות הקריטיים
+    let updateState = {
+        deck: gameState.deck || [],
+        discardPile: gameState.discardPile || [],
+        hasDrawn: gameState.hasDrawn,
+        turn: "", // יקבע בהמשך
+        players: {
+            user: {
+                hand: gameState.players.user.hand || [],
+                table: gameState.players.user.table || [],
+                downed: gameState.players.user.downed || false,
+                mortoTaken: gameState.players.user.mortoTaken || false
+            },
+            comp: {
+                hand: gameState.players.comp.hand || [],
+                table: gameState.players.comp.table || [],
+                downed: gameState.players.comp.downed || false,
+                mortoTaken: gameState.players.comp.mortoTaken || false
+            }
+        }
+    };
+    
+    if (myRole === 'player2') {
+        updateState.players.user = gameState.players.comp;
+        updateState.players.comp = gameState.players.user;
+        // אם תורי (user), אז בענן זה player2
+        updateState.turn = (gameState.turn === 'user') ? 'player2' : 'player1';
+    } else {
+        // אם אני player1 ותורי (user), אז בענן זה player1
+        updateState.turn = (gameState.turn === 'user') ? 'player1' : 'player2';
+    }
 
-    db.ref('rooms/' + currentRoomId).update(updates);
+    db.ref('rooms/' + currentRoomId + '/gameState').set(updateState);
 }
 </script>
 </body>
