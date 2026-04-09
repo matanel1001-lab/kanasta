@@ -786,7 +786,8 @@ function takeMorto(pKey, isDirecto) {
 
 function finishTurn() {
     const p = gameState.players.user;
-    
+    // לוג פנימי לתוך ה-Sidebar כדי שתראה את זה בנייד/במסך
+    addLog(`דיבאג: יד=${p.hand.length}, מורטו=${p.mortoTaken}, קנסטה=${p.table.some(m => m.length >= 7)}`, "system");
     // דיבאג: בדיקת מצב השחקן לפני סיום התור
     console.log("--- Debug Finish Turn ---");
     console.log("Hand length:", p.hand.length);
@@ -1652,39 +1653,31 @@ function listenToRoom(roomId) {
 function syncToCloud() {
     if (!isOnline || !currentRoomId) return;
     
-    // יצירת עותק נקי ולוודא שאין undefined בשדות הקריטיים
-    let updateState = {
-        deck: gameState.deck || [],
-        discardPile: gameState.discardPile || [],
-        hasDrawn: gameState.hasDrawn,
-        turn: "", // יקבע בהמשך
-        players: {
-            user: {
-                hand: gameState.players.user.hand || [],
-                table: gameState.players.user.table || [],
-                downed: gameState.players.user.downed || false,
-                mortoTaken: gameState.players.user.mortoTaken || false
-            },
-            comp: {
-                hand: gameState.players.comp.hand || [],
-                table: gameState.players.comp.table || [],
-                downed: gameState.players.comp.downed || false,
-                mortoTaken: gameState.players.comp.mortoTaken || false
-            }
-        }
-    };
+    // יצירת האובייקט לעדכון
+    let playersUpdate = {};
     
-    if (myRole === 'player2') {
-        updateState.players.user = gameState.players.comp;
-        updateState.players.comp = gameState.players.user;
-        // אם תורי (user), אז בענן זה player2
-        updateState.turn = (gameState.turn === 'user') ? 'player2' : 'player1';
+    if (myRole === 'player1') {
+        playersUpdate = {
+            user: gameState.players.user, // אני שחקן 1
+            comp: gameState.players.comp  // היריב הוא שחקן 2
+        };
     } else {
-        // אם אני player1 ותורי (user), אז בענן זה player1
-        updateState.turn = (gameState.turn === 'user') ? 'player1' : 'player2';
+        playersUpdate = {
+            user: gameState.players.comp, // היריב הוא שחקן 1
+            comp: gameState.players.user  // אני שחקן 2
+        };
     }
 
-    db.ref('rooms/' + currentRoomId + '/gameState').set(updateState);
+    const updateData = {
+        deck: gameState.deck,
+        discardPile: gameState.discardPile,
+        hasDrawn: gameState.hasDrawn,
+        turn: (gameState.turn === 'user') ? myRole : (myRole === 'player1' ? 'player2' : 'player1'),
+        players: playersUpdate
+    };
+
+    console.log("Cloud Sync - My Morto Status:", gameState.players.user.mortoTaken);
+    db.ref('rooms/' + currentRoomId + '/gameState').set(updateData);
 }
 </script>
 </body>
