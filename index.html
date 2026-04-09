@@ -1590,94 +1590,61 @@ function joinOnlineRoom() {
 function listenToRoom(roomId) {
     db.ref('rooms/' + roomId).on('value', (snapshot) => {
         const data = snapshot.val();
-        if (!data) return;
+        if (!data || !data.gameState) return;
 
-        console.log("Update received from Firebase:", data);
-
-        // 1. טיפול במעבר למסך משחק ורישום לוג הצטרפות (פעם אחת בלבד)
-        if (data.status === 'playing') {
-            // אם עוד לא רשמנו בלוג שהיריב הצטרף
-            if (!gameState.opponentJoinedLogDone) {
-                const opponentName = (myRole === 'player1') ? data.player2Name : data.player1Name;
-                addLog(`השחקן ${opponentName} הצטרף! המשחק מתחיל.`, "system");
-                gameState.opponentJoinedLogDone = true;
-            }
-
-            // סגירת תפריט אם הוא עדיין פתוח
-            if (document.getElementById('main-menu').style.display !== 'none') {
-                document.getElementById('main-menu').style.display = 'none';
-                document.getElementById('game-container').style.display = 'grid';
-            }
-        }
-
-        // 2. עדכון נתוני המשחק עצמם
-        if (!data.gameState) return;
         const remoteGS = data.gameState;
 
-        // מיפוי נכון של השחקנים לפי התפקיד (שחקן 1 מול שחקן 2)
-        // מיפוי נכון של השחקנים לפי התפקיד (שחקן 1 מול שחקן 2)
-        if (myRole === 'player1') {
-            // שחקן 1 מעדכן ישירות מהשדות התואמים בענן
-            gameState.players.user.hand = remoteGS.players.user.hand || [];
-            gameState.players.user.table = remoteGS.players.user.table || [];
-            gameState.players.user.downed = remoteGS.players.user.downed || false;
-            gameState.players.user.mortoTaken = remoteGS.players.user.mortoTaken || false;
-
-            gameState.players.comp.hand = remoteGS.players.comp.hand || [];
-            gameState.players.comp.table = remoteGS.players.comp.table || [];
-            
-            gameState.turn = (remoteGS.turn === 'player1') ? 'user' : 'comp';
-        } else {
-            // שחקן 2 רואה את 'comp' מהענן בתור ה-'user' שלו
-            gameState.players.user.hand = remoteGS.players.comp.hand || [];
-            gameState.players.user.table = remoteGS.players.comp.table || [];
-            gameState.players.user.downed = remoteGS.players.comp.downed || false;
-            gameState.players.user.mortoTaken = remoteGS.players.comp.mortoTaken || false;
-
-            gameState.players.comp.hand = remoteGS.players.user.hand || [];
-            gameState.players.comp.table = remoteGS.players.user.table || [];
-            
-            gameState.turn = (remoteGS.turn === 'player2') ? 'user' : 'comp';
-        }
-        // עדכון נתונים גלובליים
+        // --- עדכון נתונים משותפים ---
         gameState.deck = remoteGS.deck || [];
         gameState.discardPile = remoteGS.discardPile || [];
         gameState.hasDrawn = remoteGS.hasDrawn || false;
-// תיקון: וודא שהמשתנים המקומיים לא נמחקים בעת עדכון מהענן
-        if (gameState.currentTurnMelds === undefined) gameState.currentTurnMelds = [];
-        if (gameState.selectedIndices === undefined) gameState.selectedIndices = [];
+
+        // --- עדכון התור ---
+        if (myRole === 'player1') {
+            gameState.turn = (remoteGS.turn === 'player1') ? 'user' : 'comp';
+        } else {
+            gameState.turn = (remoteGS.turn === 'player2') ? 'user' : 'comp';
+        }
+
+        // --- עדכון שחקנים - החלק הקריטי ---
+        if (myRole === 'player1') {
+            // אני שחקן 1: אני מעדכן מהענן רק את שחקן 2 (comp)
+            gameState.players.comp = remoteGS.players.comp || gameState.players.comp;
+            
+            // את עצמי (user) אני מעדכן מהענן *רק* אם זה לא התור שלי 
+            // כדי למנוע דריסה בזמן שאני מבצע פעולות
+            if (gameState.turn === 'comp') {
+                gameState.players.user = remoteGS.players.user || gameState.players.user;
+            }
+        } else {
+            // אני שחקן 2: אני מעדכן מהענן רק את שחקן 1 (comp אצלי)
+            gameState.players.comp = remoteGS.players.user || gameState.players.comp;
+            
+            if (gameState.turn === 'comp') {
+                gameState.players.user = remoteGS.players.comp || gameState.players.user;
+            }
+        }
+
         render();
     });
 }
 // פונקציית עזר לעדכון הענן אחרי כל מהלך
 function syncToCloud() {
     if (!isOnline || !currentRoomId) return;
-    
-    // יצירת האובייקט לעדכון
-    let playersUpdate = {};
-    
-    if (myRole === 'player1') {
-        playersUpdate = {
-            user: gameState.players.user, // אני שחקן 1
-            comp: gameState.players.comp  // היריב הוא שחקן 2
-        };
-    } else {
-        playersUpdate = {
-            user: gameState.players.comp, // היריב הוא שחקן 1
-            comp: gameState.players.user  // אני שחקן 2
-        };
-    }
 
-    const updateData = {
-        deck: gameState.deck,
-        discardPile: gameState.discardPile,
-        hasDrawn: gameState.hasDrawn,
-        turn: (gameState.turn === 'user') ? myRole : (myRole === 'player1' ? 'player2' : 'player1'),
-        players: playersUpdate
-    };
+    const myPath = (myRole === 'player1') ? 'user' : 'comp';
+    const updates = {};
 
-    console.log("Cloud Sync - My Morto Status:", gameState.players.user.mortoTaken);
-    db.ref('rooms/' + currentRoomId + '/gameState').set(updateData);
+    // עדכון רק של השחקן שלי - לא נוגע בשחקן השני!
+    updates[`gameState/players/${myPath}`] = gameState.players.user;
+    
+    // עדכון נתונים משותפים
+    updates['gameState/deck'] = gameState.deck;
+    updates['gameState/discardPile'] = gameState.discardPile;
+    updates['gameState/hasDrawn'] = gameState.hasDrawn;
+    updates['gameState/turn'] = (gameState.turn === 'user') ? myRole : (myRole === 'player1' ? 'player2' : 'player1');
+
+    db.ref('rooms/' + currentRoomId).update(updates);
 }
 </script>
 </body>
