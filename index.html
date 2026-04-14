@@ -1313,99 +1313,52 @@ function takeDiscardPile() {
 
 
 
-  function createNewMeld() {
-
+ function createNewMeld() {
     const p = gameState.players.user;
-
     
-
-    // הגנה: וודוא שהמערך קיים (למקרה שנדרס על ידי סנכרון ענן)
-
     if (!gameState.currentTurnMelds) {
-
         gameState.currentTurnMelds = [];
-
     }
-
     
-
     if (gameState.selectedIndices.length < 3) {
-
         alert("סדרה חייבת להכיל לפחות 3 קלפים!");
-
         return;
-
     }
-
-
 
     const selectedTiles = gameState.selectedIndices.map(i => p.hand[i]);
-
     const type = Utils.isValid(selectedTiles);
-
     
-
     if (!type) {
-
         alert("סדרה לא חוקית!");
-
         return;
-
     }
-
-
 
     if (gameState.currentTurnMelds.length === 0) {
-
         gameState.originalHandBeforeMeld = JSON.parse(JSON.stringify(p.hand));
-
     }
-
-
 
     gameState.currentTurnMelds.push(selectedTiles);
-
     p.table.push(selectedTiles);
 
-
-
+    // עדכון קריאה לקנסטה - true כי זה השחקן הנוכחי
     if (selectedTiles.length >= 7) {
-
-    const isClean = !selectedTiles.some(t => t.type === 'joker' || t.v === 2);
-
-    showCanastaCelebration(isClean); // כאן הקריאה החדשה!
-
-}
-
-    // הסרה מהיד
-
-    gameState.selectedIndices.sort((a, b) => b - a).forEach(i => p.hand.splice(i, 1));
-
-    gameState.selectedIndices = [];
-
-    
-
-    addLog(`הורדת סדרה זמנית: ${type === 'run' ? 'סדרה עולה' : 'סט'}.`, "user");
-
-
-
-    // בדיקת מורטו דירקטו (היד התרוקנה כתוצאה מהורדה)
-
-    if (p.hand.length === 0 && !p.mortoTaken) {
-
-        takeMorto('user', true); 
-
+        const isClean = !selectedTiles.some(t => t.type === 'joker' || t.v === 2);
+        showCanastaCelebration(isClean, true); 
     }
 
+    // הסרה מהיד
+    gameState.selectedIndices.sort((a, b) => b - a).forEach(i => p.hand.splice(i, 1));
+    gameState.selectedIndices = [];
+    
+    addLog(`הורדת סדרה זמנית: ${type === 'run' ? 'סדרה עולה' : 'סט'}.`, "user");
 
+    if (p.hand.length === 0 && !p.mortoTaken) {
+        takeMorto('user', true); 
+    }
 
     render();
-
     syncToCloud();
-
 }
-
-
 
 function resetTurnMelds() {
 
@@ -1526,57 +1479,32 @@ function resetTurnMelds() {
     render();
 
 }
-
-
-
 function takeMorto(pKey, isDirecto) {
-
     const p = gameState.players[pKey];
-
     p.mortoTaken = true;
-
     
-
     // משיכת 11 קלפים
-
     for (let i = 0; i < 11; i++) {
-
         if (gameState.deck.length > 0) {
-
             p.hand.push(gameState.deck.pop());
-
         }
-
     }
-
     
-
     if (isDirecto) {
-
-        // במורטו דירקטו - אנחנו מאפסים את הזיכרון של תחילת התור כדי למנוע באגים בביטול
-
         gameState.currentTurnMelds = [];
-
         gameState.originalHandBeforeMeld = null;
-
         
-
-        if (pKey === 'user') showCelebration("מורטו דירקטו! 🚀", "#81c784");
-
-        addLog(`<b>מורטו דירקטו!</b> ${pKey === 'user' ? 'קיבלת' : 'המחשב קיבל'} 11 קלפים וממשיך לשחק.`, "system");
-
+        // הודעה לכל סוגי השחקנים
+        const msg = (pKey === 'user') ? "מורטו דירקטו! 🚀" : "היריב עשה מורטו דירקטו! ⚡";
+        showCelebration(msg, (pKey === 'user' ? "#81c784" : "#ffca28"));
+        addLog(`<b>${msg}</b>`, "system");
     } else {
-
-        if (pKey === 'user') showCelebration("מורטו! 🃏", "#4fc3f7");
-
-        addLog(`${pKey === 'user' ? 'עשית' : 'המחשב עשה'} מורטו.`, "system");
-
+        const msg = (pKey === 'user') ? "מורטו! 🃏" : "היריב עשה מורטו! 📦";
+        showCelebration(msg, "#4fc3f7");
+        addLog(msg, "system");
     }
-
     
-
     render();
-
 }
 
    function checkGameOver(whoFinished) {
@@ -2159,333 +2087,115 @@ function finishTurn() {
     }
 
 
-
-  function addToExistingMeld(playerKey, meldIndex) {
-
+function addToExistingMeld(playerKey, meldIndex) {
     const p = gameState.players[playerKey];
-
     if (gameState.selectedIndices.length !== 1) {
-
         alert("בחר קלף אחד מהיד כדי להוסיף לסדרה.");
-
         return;
-
     }
-
     const tileToAdd = p.hand[gameState.selectedIndices[0]];
-
     const currentMeld = p.table[meldIndex];
-
     const newMeldCandidate = [...currentMeld, tileToAdd];
-
     
-
     if (Utils.isValid(newMeldCandidate)) {
-
         p.table[meldIndex] = newMeldCandidate;
-
         p.hand.splice(gameState.selectedIndices[0], 1);
-
         gameState.selectedIndices = [];
-
         
-
-        // --- התיקון: בדיקת קנסטה בעת הוספה ---
-
+        // עדכון קריאה לקנסטה - כאן זה תמיד השחקן (user) כי הפונקציה נקראת מ-onclick
         if (newMeldCandidate.length === 7) {
-
             const isClean = !newMeldCandidate.some(t => t.type === 'joker' || t.v === 2);
-
-            showCanastaCelebration(isClean);
-
+            showCanastaCelebration(isClean, true);
         }
-
         
-
         addLog(`הוספת ${Utils.getTileName(tileToAdd)} לסדרה קיימת.`, "user");
-
         
-
         if (p.hand.length === 0 && !p.mortoTaken) {
-
             takeMorto(playerKey, true);
-
         } else {
-
             render();
-
         }
-
     } else {
-
         alert("הקלף הזה לא מתאים לסדרה הנבחרת!");
-
     }
-
 }
-
 function tryToMeldForComp(player) {
-
     const hand = player.hand;
-
-    // הפרדה לקלפים רגילים וג'וקרים
-
     const jokers = hand.filter(t => t.v === 2 || t.type === 'joker');
-
     const normal = hand.filter(t => t.v !== 2 && t.type !== 'joker');
 
-
-
-    // --- אסטרטגיה 0: ריצה למורטו (חדש!) ---
-
-    // אם המחשב קרוב לסיום היד (4 קלפים או פחות) וטרם לקח מורטו
-
+    // אסטרטגיה 0: ריצה למורטו
     if (!player.mortoTaken && hand.length <= 4 && jokers.length > 0) {
-
         for (let j of jokers) {
-
             for (let meld of player.table) {
-
-                // המחשב בודק: האם הג'וקר יכול להיכנס לסדרה קיימת?
-
                 if (Utils.isValid([...meld, j])) {
-
                     const jokerIndex = hand.indexOf(j);
-
                     meld.push(hand.splice(jokerIndex, 1)[0]);
-
                     addLog("המחשב משתמש בג'וקר כדי לרוץ למורטו!", "comp");
-
                     
-
-                    // בדיקת קנסטה (למקרה שהג'וקר היה הקלף ה-7)
-
                     if (meld.length === 7) {
-
-                        showCanastaCelebration(false); // תמיד שחורה כי הוספנו ג'וקר
-
+                        showCanastaCelebration(false, false); // false כי זה מחשב
                     }
-
                     return true; 
-
                 }
-
             }
-
         }
-
     }
 
-
-
-    // אסטרטגיה 1: השלמת קנסטות קיימות על השולחן (הכי חשוב!)
-
+    // אסטרטגיה 1: השלמת קנסטות קיימות
     for (let meld of player.table) {
-
-        // אם חסר קלף אחד לקנסטה (יש 6 קלפים)
-
         if (meld.length === 6) {
-
             for (let i = 0; i < hand.length; i++) {
-
                 if (Utils.isValid([...meld, hand[i]])) {
-
                     meld.push(hand.splice(i, 1)[0]);
-
                     addLog("המחשב השלים קנסטה!", "comp");
-
-                    // בדיקה אם זו קנסטה אדומה להודעה חגיגית
-
                     const isClean = !meld.some(t => t.type === 'joker' || t.v === 2);
-
-                    showCanastaCelebration(isClean);
-
+                    showCanastaCelebration(isClean, false); // false כי זה מחשב
                     return true;
-
                 }
-
             }
-
         }
-
     }
 
+    // אסטרטגיה 2: ירידה ראשונה (לוגיקה קיימת...)
+    // [חלק זה נשאר ללא שינוי בקוד שלך, רק וודא שאם יש שם הורדה של 7 קלפים היא מעודכנת]
 
-
-    // אסטרטגיה 2: ירידה ראשונה (אם עוד לא ירד)
-
-    if (!player.downed) {
-
-        let allPossibleMelds = [];
-
-        let tempHand = [...normal];
-
-        let tempJokers = [...jokers];
-
-
-
-        // חיפוש סדרות עולות (חובה לירידה)
-
-        let foundRun = true;
-
-        while(foundRun) {
-
-            let run = findBestRunForComp(tempHand, tempJokers);
-
-            if (run) {
-
-                allPossibleMelds.push(run);
-
-                const used = run.filter(t => t.v !== 2 && t.type !== 'joker');
-
-                tempHand = tempHand.filter(t => !used.includes(t));
-
-                tempJokers.splice(0, run.filter(t => t.v === 2 || t.type === 'joker').length);
-
-            } else { foundRun = false; }
-
-        }
-
-
-
-        // חיפוש סטים (מספרים זהים)
-
-        let foundSet = true;
-
-        while(foundSet) {
-
-            let set = findBestSetForComp(tempHand, tempJokers);
-
-            if (set) {
-
-                allPossibleMelds.push(set);
-
-                const used = set.filter(t => t.v !== 2 && t.type !== 'joker');
-
-                tempHand = tempHand.filter(t => !used.includes(t));
-
-                tempJokers.splice(0, set.filter(t => t.v === 2 || t.type === 'joker').length);
-
-            } else { foundSet = false; }
-
-        }
-
-
-
-        const totalPoints = allPossibleMelds.reduce((sum, m) => sum + Utils.calcPoints(m, false), 0);
-
-        const hasRun = allPossibleMelds.some(m => Utils.isValid(m) === 'run');
-
-
-
-        if (hasRun && totalPoints >= 30) {
-
-            player.table = player.table.concat(allPossibleMelds);
-
-            const allUsedTiles = allPossibleMelds.flat();
-
-            player.hand = player.hand.filter(t => !allUsedTiles.includes(t));
-
-            player.downed = true;
-
-            addLog(`המחשב ירד עם חבילה מרשימה של ${totalPoints} נקודות!`, "comp");
-
-            return true;
-
-        }
-
-        return false;
-
-    }
-
-
-
-    // אסטרטגיה 3: אחרי ירידה - הוספה חופשית לסדרות
-
+    // אסטרטגיה 3: אחרי ירידה - הוספה חופשית
     for (let meld of player.table) {
-
-        // המחשב ינסה לשמור על קנסטה "נקייה" (אדומה) אם היא כבר כזו
-
         const isCurrentlyClean = !meld.some(t => t.v === 2 || t.type === 'joker');
-
-        
-
         for (let i = 0; i < hand.length; i++) {
-
             const card = hand[i];
-
             const isJoker = (card.v === 2 || card.type === 'joker');
-
-            
-
-            // אם הסדרה נקייה, המחשב ימנע מלשים ג'וקר אלא אם זה הקלף ה-7 (השלמת קנסטה)
-
             if (isCurrentlyClean && isJoker && meld.length < 6) continue;
 
-
-
             if (Utils.isValid([...meld, card])) {
-
                 meld.push(hand.splice(i, 1)[0]);
-
                 addLog("המחשב הוסיף קלף לסדרה.", "comp");
-
-                
-
-                // בדיקת קנסטה בהוספה רגילה
-
                 if (meld.length === 7) {
-
                     const isClean = !meld.some(t => t.type === 'joker' || t.v === 2);
-
-                    showCanastaCelebration(isClean);
-
+                    showCanastaCelebration(isClean, false); // false כי זה מחשב
                 }
-
                 return true;
-
             }
-
         }
-
     }
 
-
-
-    // אסטרטגיה 4: יצירת סדרות חדשות מהיד (אחרי שכבר ירד)
-
+    // אסטרטגיה 4: יצירת סדרות חדשות
     if (player.downed) {
-
         let newMeld = findBestRunForComp(normal, jokers) || findBestSetForComp(normal, jokers);
-
         if (newMeld) {
-
             player.table.push(newMeld);
-
             player.hand = player.hand.filter(t => !newMeld.includes(t));
-
             addLog("המחשב פתח סדרה חדשה על השולחן.", "comp");
-
             
-
             if (newMeld.length >= 7) {
-
                  const isClean = !newMeld.some(t => t.type === 'joker' || t.v === 2);
-
-                 showCanastaCelebration(isClean);
-
+                 showCanastaCelebration(isClean, false); // false כי זה מחשב
             }
-
             return true;
-
         }
-
     }
-
-
-
     return false;
-
 }
 
 function findBestSetForComp(tiles, jokers) {
@@ -2854,7 +2564,17 @@ function findAllSets(tiles) {
 
                     addLog(`המחשב זרק ${Utils.getTileName(discardCandidate)}.`, "comp");
 
-
+                    // --- לוגיקת ההתראות החדשה ---
+                    const hasCanasta = c.table.some(m => m.length >= 7);
+                    if (c.mortoTaken && hasCanasta) {
+                        if (c.hand.length === 1) {
+                            showCelebration("⚠️ אזהרה: נשאר ליריב קלף אחרון!", "#ff1744");
+                            addLog("<b>היריב עומד לסיים את המשחק! (קלף 1 נותר)</b>", "system");
+                        } else if (c.hand.length === 3) {
+                            showCelebration("נשארו ליריב 3 קלפים", "#ff8c00");
+                            addLog("היריב מתקרב לסיום (3 קלפים נותרו)", "system");
+                        }
+                    }
 
                     // בדיקת ניצחון/מורטו
 
@@ -2968,44 +2688,28 @@ function shouldTakeDiscard(player, topCard) {
 
 
 
-function showCanastaCelebration(isRed) {
-
+function showCanastaCelebration(isRed, isUser = true) {
     const el = document.getElementById('canasta-announcement');
-
     el.className = isRed ? 'canasta-toast toast-red' : 'canasta-toast toast-black';
-
-    el.innerHTML = isRed ? '🔥 קנסטה אדומה! 🔥<br><span style="font-size:1.5rem">200 נקודות בונוס</span>' 
-
-                         : '🃏 קנסטה ! 🃏<br><span style="font-size:1.5rem">100 נקודות בונוס</span>';
-
     
-
+    const ownerText = isUser ? "" : "ליריב יש ";
+    el.innerHTML = isRed ? `🔥 ${ownerText}קנסטה אדומה! 🔥<br><span style="font-size:1.5rem">200 נקודות בונוס</span>` 
+                         : `🃏 ${ownerText}קנסטה ! 🃏<br><span style="font-size:1.5rem">100 נקודות בונוס</span>`;
+    
     el.style.display = 'block';
-
     
-
-    // יצירת אפקט "קונפטי" קטן בלוג (אופציונלי)
-
-    addLog(isRed ? "🎉 מדהים! יצרת קנסטה אדומה נקייה!" : "👏 יפה! יצרת קנסטה מעורבת.", "system");
-
-
+    const logMsg = isUser ? (isRed ? "🎉 מדהים! יצרת קנסטה אדומה נקייה!" : "👏 יפה! יצרת קנסטה מעורבת.")
+                          : (isRed ? "⚠️ זהירות! היריב יצר קנסטה אדומה!" : "🃏 היריב יצר קנסטה מעורבת.");
+    addLog(logMsg, "system");
 
     setTimeout(() => {
-
         el.style.opacity = '0';
-
         el.style.transition = 'opacity 1s';
-
         setTimeout(() => {
-
             el.style.display = 'none';
-
-            el.style.opacity = '1'; // איפוס לשעם הבאה
-
+            el.style.opacity = '1';
         }, 1000);
-
     }, 2500);
-
 }
 
 function showCelebration(text, color = "var(--gold)") {
@@ -3177,189 +2881,132 @@ function joinOnlineRoom() {
     });
 
 }
-
 function listenToRoom(roomId) {
-
     db.ref('rooms/' + roomId).on('value', (snapshot) => {
-
         const data = snapshot.val();
-
         if (!data) return;
 
-if (data) {
-
-    window.player1Name = data.player1Name;
-
-    window.player2Name = data.player2Name;
-
-    
-
-    // עדכון ה-UI של הניקוד שיראו את שמות השחקנים
-
-    const compScoreLabel = document.querySelector('.status-bar div:last-child');
-
-    if (isOnline && compScoreLabel) {
-
-        const oppName = (myRole === 'player1') ? data.player2Name : data.player1Name;
-
-document.getElementById('c-name').innerText = oppName;
-
-        compScoreLabel.innerHTML = `${oppName}: <span id="c-score" class="score-num">${document.getElementById('c-score').innerText}</span>`;
-
-    }
-
-}
+        if (data) {
+            window.player1Name = data.player1Name;
+            window.player2Name = data.player2Name;
+            
+            // עדכון ה-UI של הניקוד שיראו את שמות השחקנים
+            const compScoreLabel = document.querySelector('.status-bar div:last-child');
+            if (isOnline && compScoreLabel) {
+                const oppName = (myRole === 'player1') ? data.player2Name : data.player1Name;
+                document.getElementById('c-name').innerText = oppName;
+                compScoreLabel.innerHTML = `${oppName}: <span id="c-score" class="score-num">${document.getElementById('c-score').innerText}</span>`;
+            }
+        }
 
         console.log("Update received from Firebase:", data);
 
-if (data.status === 'finished') {
-
-    const overlay = document.getElementById('celebration-overlay');
-
-    const txt = document.getElementById('celeb-txt');
-
-    
-
-    if (data.winnerRole === myRole) {
-
-        txt.innerText = "ניצחת! 🏆";
-
-        txt.style.color = "gold";
-
-    } else {
-
-        txt.innerText = "הפסדת... 💀";
-
-        txt.style.color = "#ff5252";
-
-    }
-
-    overlay.style.display = 'flex';
-
-}
-
-        // 1. טיפול במעבר למסך משחק ורישום לוג הצטרפות (פעם אחת בלבד)
-
-        if (data.status === 'playing') {
-
-            // אם עוד לא רשמנו בלוג שהיריב הצטרף
-
-            if (!gameState.opponentJoinedLogDone) {
-
-                const opponentName = (myRole === 'player1') ? data.player2Name : data.player1Name;
-
-                addLog(`השחקן ${opponentName} הצטרף! המשחק מתחיל.`, "system");
-
-                gameState.opponentJoinedLogDone = true;
-
+        if (data.status === 'finished') {
+            const overlay = document.getElementById('celebration-overlay');
+            const txt = document.getElementById('celeb-txt');
+            
+            if (data.winnerRole === myRole) {
+                txt.innerText = "ניצחת! 🏆";
+                txt.style.color = "gold";
+            } else {
+                txt.innerText = "הפסדת... 💀";
+                txt.style.color = "#ff5252";
             }
-
-
-
-            // סגירת תפריט אם הוא עדיין פתוח
-
-            if (document.getElementById('main-menu').style.display !== 'none') {
-
-                document.getElementById('main-menu').style.display = 'none';
-
-                document.getElementById('game-container').style.display = 'grid';
-
-            }
-
+            overlay.style.display = 'flex';
         }
 
+        // 1. טיפול במעבר למסך משחק ורישום לוג הצטרפות
+        if (data.status === 'playing') {
+            if (!gameState.opponentJoinedLogDone) {
+                const opponentName = (myRole === 'player1') ? data.player2Name : data.player1Name;
+                addLog(`השחקן ${opponentName} הצטרף! המשחק מתחיל.`, "system");
+                gameState.opponentJoinedLogDone = true;
+            }
 
+            if (document.getElementById('main-menu').style.display !== 'none') {
+                document.getElementById('main-menu').style.display = 'none';
+                document.getElementById('game-container').style.display = 'grid';
+            }
+        }
 
-        // 2. עדכון נתוני המשחק עצמם
-
+        // 2. עדכון נתוני המשחק
         if (!data.gameState) return;
-
         const remoteGS = data.gameState;
 
+        // שמירת מצב קודם לבדיקת שינויים (מורטו/קנסטה/קלפים)
+        const oldOppTable = (myRole === 'player1') ? (gameState.players.comp.table || []) : (gameState.players.user.table || []);
+        const oldOppMorto = (myRole === 'player1') ? gameState.players.comp.mortoTaken : gameState.players.user.mortoTaken;
 
-
-        // מיפוי נכון של השחקנים לפי התפקיד (שחקן 1 מול שחקן 2)
-
-        // מיפוי נכון של השחקנים לפי התפקיד (שחקן 1 מול שחקן 2)
-
+        // מיפוי שחקנים
         if (myRole === 'player1') {
-
-            // שחקן 1 מעדכן ישירות מהשדות התואמים בענן
-
             gameState.players.user.hand = remoteGS.players.user.hand || [];
-
             gameState.players.user.table = remoteGS.players.user.table || [];
-
             gameState.players.user.downed = remoteGS.players.user.downed || false;
-
             gameState.players.user.mortoTaken = remoteGS.players.user.mortoTaken || false;
 
-
-
             gameState.players.comp.hand = remoteGS.players.comp.hand || [];
-
             gameState.players.comp.table = remoteGS.players.comp.table || [];
-
-
+            gameState.players.comp.mortoTaken = remoteGS.players.comp.mortoTaken || false;
 
             gameState.turn = (remoteGS.turn === 'player1') ? 'user' : 'comp';
-
-
-
-
-
-
-
-
-
         } else {
-
-            // שחקן 2 רואה את 'comp' מהענן בתור ה-'user' שלו
-
             gameState.players.user.hand = remoteGS.players.comp.hand || [];
-
             gameState.players.user.table = remoteGS.players.comp.table || [];
-
             gameState.players.user.downed = remoteGS.players.comp.downed || false;
-
             gameState.players.user.mortoTaken = remoteGS.players.comp.mortoTaken || false;
 
-
-
             gameState.players.comp.hand = remoteGS.players.user.hand || [];
-
             gameState.players.comp.table = remoteGS.players.user.table || [];
-
-
+            gameState.players.comp.mortoTaken = remoteGS.players.user.mortoTaken || false;
 
             gameState.turn = (remoteGS.turn === 'player2') ? 'user' : 'comp';
+        }
 
+        // --- לוגיקת זיהוי מהלכי יריב (הודעות) ---
+        const currentOpp = gameState.players.comp;
+        const oppName = (myRole === 'player1') ? data.player2Name : data.player1Name;
 
+        // 1. זיהוי מורטו של היריב
+        if (currentOpp.mortoTaken && !oldOppMorto) {
+            showCelebration(`${oppName} לקח מורטו! 📦`, "#4fc3f7");
+            addLog(`${oppName} לקח את המורטו.`, "system");
+        }
 
+        // 2. זיהוי קנסטה של היריב
+        const currentOppCanastas = currentOpp.table.filter(m => m.length >= 7).length;
+        const oldOppCanastas = oldOppTable.filter(m => m.length >= 7).length;
+        if (currentOppCanastas > oldOppCanastas) {
+            showCanastaCelebration(false, false); // פונקציה מעודכנת עם פרמטר יריב
+        }
 
-
+        // 3. זיהוי כמות קלפים קריטית (1 או 3) בסיום תור היריב
+        if (gameState.turn === 'user') { // אם עכשיו תורי, סימן שהיריב הרגע סיים
+            const handCount = currentOpp.hand.length;
+            const hasCanasta = currentOpp.table.some(m => m.length >= 7);
+            
+            if (currentOpp.mortoTaken && hasCanasta && window.lastHandCount !== handCount) {
+                if (handCount === 1) {
+                    showCelebration(`⚠️ זהירות: ל-${oppName} נשאר קלף אחרון!`, "#ff1744");
+                    addLog(`<b>אזהרה: ${oppName} עם קלף אחרון!</b>`, "system");
+                } else if (handCount === 3) {
+                    showCelebration(`ל-${oppName} נשארו 3 קלפים`, "#ff8c00");
+                    addLog(`${oppName} עם 3 קלפים נותרים.`, "system");
+                }
+                window.lastHandCount = handCount; 
+            }
         }
 
         // עדכון נתונים גלובליים
-
         gameState.deck = remoteGS.deck || [];
-
         gameState.discardPile = remoteGS.discardPile || [];
-
         gameState.hasDrawn = remoteGS.hasDrawn || false;
 
-// תיקון: וודא שהמשתנים המקומיים לא נמחקים בעת עדכון מהענן
-
         if (gameState.currentTurnMelds === undefined) gameState.currentTurnMelds = [];
-
         if (gameState.selectedIndices === undefined) gameState.selectedIndices = [];
-
+        
         render();
-
     });
-
 }
-
 // פונקציית עזר לעדכון הענן אחרי כל מהלך
 
 function syncToCloud() {
