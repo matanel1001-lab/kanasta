@@ -2890,7 +2890,6 @@ function listenToRoom(roomId) {
             window.player1Name = data.player1Name;
             window.player2Name = data.player2Name;
             
-            // עדכון ה-UI של הניקוד שיראו את שמות השחקנים
             const compScoreLabel = document.querySelector('.status-bar div:last-child');
             if (isOnline && compScoreLabel) {
                 const oppName = (myRole === 'player1') ? data.player2Name : data.player1Name;
@@ -2899,12 +2898,9 @@ function listenToRoom(roomId) {
             }
         }
 
-        console.log("Update received from Firebase:", data);
-
         if (data.status === 'finished') {
             const overlay = document.getElementById('celebration-overlay');
             const txt = document.getElementById('celeb-txt');
-            
             if (data.winnerRole === myRole) {
                 txt.innerText = "ניצחת! 🏆";
                 txt.style.color = "gold";
@@ -2915,26 +2911,22 @@ function listenToRoom(roomId) {
             overlay.style.display = 'flex';
         }
 
-        // 1. טיפול במעבר למסך משחק ורישום לוג הצטרפות
         if (data.status === 'playing') {
             if (!gameState.opponentJoinedLogDone) {
                 const opponentName = (myRole === 'player1') ? data.player2Name : data.player1Name;
                 addLog(`השחקן ${opponentName} הצטרף! המשחק מתחיל.`, "system");
                 gameState.opponentJoinedLogDone = true;
             }
-
             if (document.getElementById('main-menu').style.display !== 'none') {
                 document.getElementById('main-menu').style.display = 'none';
                 document.getElementById('game-container').style.display = 'grid';
             }
         }
 
-        // 2. עדכון נתוני המשחק
         if (!data.gameState) return;
         const remoteGS = data.gameState;
 
-        // שמירת מצב קודם לבדיקת שינויים (מורטו/קנסטה/קלפים)
-        const oldOppTable = (myRole === 'player1') ? (gameState.players.comp.table || []) : (gameState.players.user.table || []);
+        // שמירת מצב קודם לבדיקת שינוי מורטו
         const oldOppMorto = (myRole === 'player1') ? gameState.players.comp.mortoTaken : gameState.players.user.mortoTaken;
 
         // מיפוי שחקנים
@@ -2943,47 +2935,43 @@ function listenToRoom(roomId) {
             gameState.players.user.table = remoteGS.players.user.table || [];
             gameState.players.user.downed = remoteGS.players.user.downed || false;
             gameState.players.user.mortoTaken = remoteGS.players.user.mortoTaken || false;
-
             gameState.players.comp.hand = remoteGS.players.comp.hand || [];
             gameState.players.comp.table = remoteGS.players.comp.table || [];
             gameState.players.comp.mortoTaken = remoteGS.players.comp.mortoTaken || false;
-
             gameState.turn = (remoteGS.turn === 'player1') ? 'user' : 'comp';
         } else {
             gameState.players.user.hand = remoteGS.players.comp.hand || [];
             gameState.players.user.table = remoteGS.players.comp.table || [];
             gameState.players.user.downed = remoteGS.players.comp.downed || false;
             gameState.players.user.mortoTaken = remoteGS.players.comp.mortoTaken || false;
-
             gameState.players.comp.hand = remoteGS.players.user.hand || [];
             gameState.players.comp.table = remoteGS.players.user.table || [];
             gameState.players.comp.mortoTaken = remoteGS.players.user.mortoTaken || false;
-
             gameState.turn = (remoteGS.turn === 'player2') ? 'user' : 'comp';
         }
 
-        // --- לוגיקת זיהוי מהלכי יריב (הודעות) ---
         const currentOpp = gameState.players.comp;
         const oppName = (myRole === 'player1') ? data.player2Name : data.player1Name;
 
-        // 1. זיהוי מורטו של היריב
+        // 1. זיהוי מורטו של היריב (פעם אחת בלבד)
         if (currentOpp.mortoTaken && !oldOppMorto) {
             showCelebration(`${oppName} לקח מורטו! 📦`, "#4fc3f7");
             addLog(`${oppName} לקח את המורטו.`, "system");
         }
 
-        // 2. זיהוי קנסטה של היריב
+        // 2. זיהוי קנסטה של היריב - תיקון: שימוש במשתנה גלובלי למניעת כפילות
         const currentOppCanastas = currentOpp.table.filter(m => m.length >= 7).length;
-        const oldOppCanastas = oldOppTable.filter(m => m.length >= 7).length;
-        if (currentOppCanastas > oldOppCanastas) {
-            showCanastaCelebration(false, false); // פונקציה מעודכנת עם פרמטר יריב
+        if (window.lastOppCanastaCount === undefined) window.lastOppCanastaCount = 0;
+
+        if (currentOppCanastas > window.lastOppCanastaCount) {
+            showCanastaCelebration(false, false); 
+            window.lastOppCanastaCount = currentOppCanastas; // עדכון המונה כדי שלא יקפוץ שוב
         }
 
-        // 3. זיהוי כמות קלפים קריטית (1 או 3) בסיום תור היריב
-        if (gameState.turn === 'user') { // אם עכשיו תורי, סימן שהיריב הרגע סיים
+        // 3. זיהוי כמות קלפים קריטית
+        if (gameState.turn === 'user') {
             const handCount = currentOpp.hand.length;
             const hasCanasta = currentOpp.table.some(m => m.length >= 7);
-            
             if (currentOpp.mortoTaken && hasCanasta && window.lastHandCount !== handCount) {
                 if (handCount === 1) {
                     showCelebration(`⚠️ זהירות: ל-${oppName} נשאר קלף אחרון!`, "#ff1744");
@@ -2996,11 +2984,9 @@ function listenToRoom(roomId) {
             }
         }
 
-        // עדכון נתונים גלובליים
         gameState.deck = remoteGS.deck || [];
         gameState.discardPile = remoteGS.discardPile || [];
         gameState.hasDrawn = remoteGS.hasDrawn || false;
-
         if (gameState.currentTurnMelds === undefined) gameState.currentTurnMelds = [];
         if (gameState.selectedIndices === undefined) gameState.selectedIndices = [];
         
