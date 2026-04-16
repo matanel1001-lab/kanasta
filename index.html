@@ -708,9 +708,24 @@ th { color: var(--gold); }
   .section h4 { font-size: 0.72rem; margin-bottom: 4px; }
 
   /* Melds — horizontal scroll instead of wrap */
-  .meld-zone { flex-wrap: nowrap; overflow-x: auto; min-height: 55px; padding-bottom: 4px; }
-  .meld-zone::-webkit-scrollbar { height: 3px; }
-  .meld-zone::-webkit-scrollbar-thumb { background: rgba(255,213,79,0.4); border-radius: 2px; }
+  .meld-zone {
+    flex-wrap: wrap;
+    overflow-x: unset;
+    min-height: 50px;
+    gap: 5px;
+  }
+  .meld-group {
+    flex-shrink: 1;
+    flex-wrap: wrap;   /* tiles inside a meld can wrap too if needed */
+    max-width: 100%;
+  }
+  /* Shrink tiles inside melds on mobile so more fit per row */
+  .meld-group .tile {
+    width: calc(var(--tw, 34px) * 0.82) !important;
+    height: calc(var(--th, 49px) * 0.82) !important;
+    font-size: calc(var(--tfs, 0.82rem) * 0.85) !important;
+    margin: 1px;
+  }
 
   /* Discard pile */
   #discard-area { max-height: 85px; min-height: 55px; }
