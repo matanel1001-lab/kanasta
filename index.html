@@ -1,4 +1,6 @@
 
+
+
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -581,6 +583,7 @@ body.opponent-turn { background-color: #1a2a3a; }
 }
 .toast-red { background: linear-gradient(135deg, #ff1744, #b71c1c); color: #fff; border-color: #ff8a80; }
 .toast-black { background: linear-gradient(135deg, #424242, #111); color: var(--gold); border-color: var(--gold); }
+.toast-rainbow { background: linear-gradient(135deg, #e91e63, #9c27b0, #3f51b5, #009688, #4caf50, #ff9800); color: #fff; border-color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
 
 #canasta-announcement { display: none; }
 
@@ -967,7 +970,9 @@ th { color: var(--gold); }
           <strong style="color:var(--gold);">🏆 ניקוד</strong><br>
           3–7 = 5 נק׳ &nbsp;|&nbsp; 8–13, ג'וקר = 10 נק׳ &nbsp;|&nbsp; אס = 15 נק׳<br>
           קנסטה אדומה (נקייה) = <b>+200</b> &nbsp;|&nbsp; קנסטה מעורבת = <b>+100</b><br>
-          <b>חובה קנסטה אחת לפחות כדי לסיים!</b>
+          🌈 קנסטה קשת (1-13 אותו צבע) = <b>+500</b> (עם ג'וקר = <b>+250</b>)<br>
+          יציאה ראשונה = <b>+50</b> &nbsp;|&nbsp; <b>הניצחון נקבע לפי ניקוד!</b><br>
+          <b>חובה קנסטה אחת לפחות כדי לסיים! אסור לזרוק אחרי לקיחת ערימה!</b>
         </div>
       </div>
 
@@ -1197,14 +1202,37 @@ const Utils = {
     }, 0);
     if (includeBonus && meld.length >= 7) {
       const isClean = !meld.some(t => t.type === 'joker' || t.v === 2);
-      base += isClean ? 200 : 100;
+      // Check for rainbow canasta (all 13 values, same color)
+      if (Utils.isRainbowCanasta(meld)) {
+        const hasWild = meld.some(t => t.type === 'joker' || t.v === 2);
+        base += hasWild ? 250 : 500;
+      } else {
+        base += isClean ? 200 : 100;
+      }
     }
     return base;
+  },
+
+  // Rainbow canasta: all 13 different values (1-13) in same color (joker/2 allowed as filler)
+  isRainbowCanasta(meld) {
+    if (!meld || meld.length < 13) return false;
+    const numTiles = meld.filter(t => t.type === 'num' && t.v !== 2);
+    if (numTiles.length < 1) return false;
+    const color = numTiles[0].c;
+    if (!numTiles.every(t => t.c === color)) return false;
+    const vals = new Set(numTiles.map(t => t.v));
+    // With wilds filling gaps: check we have 13 slots covered
+    const wilds = meld.filter(t => t.type === 'joker' || t.v === 2).length;
+    const missing = 13 - vals.size;
+    return missing <= wilds && vals.size + wilds >= 13;
   },
 
   // isValid — 2 can act as real number (same color run) OR as wild joker
   isValid(tiles) {
     if (!tiles || tiles.length < 3) return false;
+
+    // Special: rainbow canasta check (13 cards)
+    if (tiles.length >= 13 && Utils.isRainbowCanasta(tiles)) return 'run';
 
     const pureJokers = tiles.filter(t => t.type === 'joker'); // only J cards
     const twos = tiles.filter(t => t.v === 2 && t.type === 'num');
@@ -1383,6 +1411,7 @@ function initGame() {
   gameState.currentTurnMelds = [];
   gameState.originalHandBeforeMeld = null;
   gameState.handOrderTiles = null;
+  gameState.tookFromDiscardThisTurn = false;
   window.lastOppCanastaCount = 0;
   window.lastHandCount = -1;
 
@@ -1535,6 +1564,7 @@ function takeDiscardPile() {
   gameState.players.user.hand = gameState.players.user.hand.concat(gameState.discardPile);
   gameState.discardPile = [];
   gameState.hasDrawn = true;
+  gameState.tookFromDiscardThisTurn = true;
   addLog(`לקחת את כל ערימת הזריקה (${count} קלפים)!`, "user");
   resetHandOrder();
   render();
@@ -1566,7 +1596,12 @@ function createNewMeld() {
   // Canasta check
   if (selectedTiles.length >= 7) {
     const isClean = !selectedTiles.some(t => t.type === 'joker' || t.v === 2);
-    showCanastaCelebration(isClean, true);
+    if (Utils.isRainbowCanasta(selectedTiles)) {
+      const hasWild = selectedTiles.some(t => t.type === 'joker' || t.v === 2);
+      showCanastaCelebration(false, true, hasWild ? 'wild' : 'clean');
+    } else {
+      showCanastaCelebration(isClean, true);
+    }
   }
 
   // BUG FIX: remove tiles by object reference to avoid index confusion
@@ -1629,7 +1664,11 @@ function addToExistingMeld(playerKey, meldIndex) {
 
     if (newMeldCandidate.length === 7) {
       const isClean = !newMeldCandidate.some(t => t.type === 'joker' || t.v === 2);
-      showCanastaCelebration(isClean, true);
+      if (Utils.isRainbowCanasta(newMeldCandidate)) {
+        showCanastaCelebration(false, true, !isClean ? 'wild' : 'clean');
+      } else {
+        showCanastaCelebration(isClean, true);
+      }
     }
 
     addLog(`הוספת ${Utils.getTileName(tileToAdd)} לסדרה קיימת.`, "user");
@@ -1674,20 +1713,26 @@ function finishTurn() {
   gameState.discardPile.push(t);
   addLog(`זרקת ${Utils.getTileName(t)}.`, "user");
 
-  // Check win (hand empty after morto already taken)
+  // Check win (hand empty)
   if (p.hand.length === 0 && p.mortoTaken === true) {
-    if (p.table.some(m => m.length >= 7)) {
-      checkGameOver('user');
-      syncToCloud();
-      return;
-    } else {
+    const hasCanasta = p.table.some(m => m.length >= 7);
+    if (!hasCanasta) {
       addLog("⛔ לא ניתן לסיים ללא קנסטה!", "system");
-      // Put the card back
       p.hand.push(gameState.discardPile.pop());
       gameState.selectedIndices = [];
       render();
       return;
     }
+    if (gameState.tookFromDiscardThisTurn) {
+      addLog("⛔ לא ניתן לסיים בתור שבו לקחת מהערימה הפתוחה — חובה למשוך מהקופה הסגורה!", "system");
+      p.hand.push(gameState.discardPile.pop());
+      gameState.selectedIndices = [];
+      render();
+      return;
+    }
+    checkGameOver('user');
+    syncToCloud();
+    return;
   }
 
   // Morto (first time hand empties)
@@ -1701,6 +1746,7 @@ function finishTurn() {
   gameState.originalHandBeforeMeld = null;
   gameState.selectedIndices = [];
   gameState.hasDrawn = false;
+  gameState.tookFromDiscardThisTurn = false;
   gameState.turn = isOnline ? (myRole === 'player1' ? 'player2' : 'player1') : 'comp';
 
   render();
@@ -1746,8 +1792,9 @@ function checkGameOver(whoFinished) {
   let uTableScore = u.table.reduce((s, m) => s + Utils.calcPoints(m), 0);
   let cTableScore = c.table.reduce((s, m) => s + Utils.calcPoints(m), 0);
 
-  if (whoFinished === 'user') uTableScore += 100;
-  else cTableScore += 100;
+  // Going out gives a +50 bonus (not auto-win)
+  if (whoFinished === 'user') uTableScore += 50;
+  else cTableScore += 50;
 
   const uHandPenalty = u.hand.reduce((s, t) => s + Utils.cardValue(t), 0);
   const cHandPenalty = c.hand.reduce((s, t) => s + Utils.cardValue(t), 0);
@@ -2117,6 +2164,7 @@ function compAI() {
 
       gameState.turn = 'user';
       gameState.hasDrawn = false;
+      gameState.tookFromDiscardThisTurn = false;
       addLog("תורך! משוך קלף.", "system");
       render();
       syncToCloud();
@@ -2422,19 +2470,28 @@ function showCelebration(text, color = "var(--gold)") {
   setTimeout(() => { toast.style.display = 'none'; }, 2200);
 }
 
-function showCanastaCelebration(isRed, isUser) {
+function showCanastaCelebration(isRed, isUser, isRainbow) {
   const el = document.getElementById('canasta-announcement');
-  el.className = isRed ? 'canasta-toast toast-red' : 'canasta-toast toast-black';
   const who = isUser ? "" : "ליריב יש ";
-  el.innerHTML = isRed
-    ? `🔥 ${who}קנסטה אדומה! 🔥<br><span style="font-size:1.4rem">200 נק' בונוס</span>`
-    : `🃏 ${who}קנסטה! 🃏<br><span style="font-size:1.4rem">100 נק' בונוס</span>`;
+  if (isRainbow) {
+    el.className = 'canasta-toast toast-rainbow';
+    const hasWild = isRainbow === 'wild';
+    el.innerHTML = `🌈 ${who}קנסטה קשת! 🌈<br><span style="font-size:1.4rem">${hasWild ? '250' : '500'} נק' בונוס</span>`;
+    addLog(isUser
+      ? (hasWild ? "🌈 קנסטה קשת עם ג'וקר — 250 נק'!" : "🌈 קנסטה קשת נקייה — 500 נק'!")
+      : "⚠️ ליריב יש קנסטה קשת!", "system");
+  } else {
+    el.className = isRed ? 'canasta-toast toast-red' : 'canasta-toast toast-black';
+    el.innerHTML = isRed
+      ? `🔥 ${who}קנסטה אדומה! 🔥<br><span style="font-size:1.4rem">200 נק' בונוס</span>`
+      : `🃏 ${who}קנסטה! 🃏<br><span style="font-size:1.4rem">100 נק' בונוס</span>`;
+    addLog(isUser
+      ? (isRed ? "🎉 קנסטה אדומה נקייה!" : "👏 קנסטה מעורבת!")
+      : (isRed ? "⚠️ היריב יצר קנסטה אדומה!" : "🃏 היריב יצר קנסטה."), "system");
+  }
   el.style.display = 'block';
   el.style.opacity = '1';
   el.style.transition = 'none';
-  addLog(isUser
-    ? (isRed ? "🎉 קנסטה אדומה נקייה!" : "👏 קנסטה מעורבת!")
-    : (isRed ? "⚠️ היריב יצר קנסטה אדומה!" : "🃏 היריב יצר קנסטה."), "system");
   setTimeout(() => {
     el.style.transition = 'opacity 1s';
     el.style.opacity = '0';
@@ -2577,6 +2634,7 @@ function listenToRoom(roomId) {
     gameState.deck = rGS.deck || [];
     gameState.discardPile = rGS.discardPile || [];
     gameState.hasDrawn = rGS.hasDrawn || false;
+    gameState.tookFromDiscardThisTurn = rGS.tookFromDiscardThisTurn || false;
     if (!gameState.currentTurnMelds) gameState.currentTurnMelds = [];
     if (!gameState.selectedIndices) gameState.selectedIndices = [];
 
@@ -2658,6 +2716,7 @@ function syncToCloud() {
   updates['gameState/deck'] = gameState.deck;
   updates['gameState/discardPile'] = gameState.discardPile;
   updates['gameState/hasDrawn'] = gameState.hasDrawn;
+  updates['gameState/tookFromDiscardThisTurn'] = gameState.tookFromDiscardThisTurn || false;
   updates['gameState/turn'] = gameState.turn === 'user'
     ? myRole
     : (myRole === 'player1' ? 'player2' : 'player1');
