@@ -1,6 +1,3 @@
-
-
-
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -1084,7 +1081,7 @@ th { color: var(--gold); }
 
     <!-- Comp Melds -->
     <div class="section">
-      <h4>הורדות יריב (<span id="c-count">11</span> קלפים ביד)</h4>
+      <h4>הורדות יריב <span id="c-count-display"></span></h4>
       <div id="comp-melds" class="meld-zone"></div>
     </div>
 
@@ -1792,15 +1789,35 @@ function checkGameOver(whoFinished) {
   let uTableScore = u.table.reduce((s, m) => s + Utils.calcPoints(m), 0);
   let cTableScore = c.table.reduce((s, m) => s + Utils.calcPoints(m), 0);
 
-  // Going out gives a +50 bonus (not auto-win)
+  // Going out gives a +50 bonus
   if (whoFinished === 'user') uTableScore += 50;
   else cTableScore += 50;
 
   const uHandPenalty = u.hand.reduce((s, t) => s + Utils.cardValue(t), 0);
   const cHandPenalty = c.hand.reduce((s, t) => s + Utils.cardValue(t), 0);
 
-  const uFinal = uTableScore - uHandPenalty;
-  const cFinal = cTableScore - cHandPenalty;
+  // Penalty for the loser if they lack canasta/morto when opponent finishes
+  let uPenalty = 0, cPenalty = 0;
+  const uHasCanasta = u.table.some(m => m.length >= 7);
+  const cHasCanasta = c.table.some(m => m.length >= 7);
+
+  if (whoFinished === 'user') {
+    // comp is the loser side — check their canasta/morto
+    if (!cHasCanasta && !c.mortoTaken) cPenalty = 300;
+    else if (!cHasCanasta || !c.mortoTaken) cPenalty = 100;
+  } else {
+    // user is the loser side
+    if (!uHasCanasta && !u.mortoTaken) uPenalty = 300;
+    else if (!uHasCanasta || !u.mortoTaken) uPenalty = 100;
+  }
+
+  let uFinal = uTableScore - uHandPenalty - uPenalty;
+  let cFinal = cTableScore - cHandPenalty - cPenalty;
+
+  // Winner gets +100
+  let winnerBonus = '';
+  if (uFinal > cFinal) { uFinal += 100; winnerBonus = 'user'; }
+  else if (cFinal > uFinal) { cFinal += 100; winnerBonus = 'comp'; }
 
   // Save to leaderboard
   const userName = document.getElementById('p-name').innerText;
@@ -1817,14 +1834,37 @@ function checkGameOver(whoFinished) {
 
   overlay.style.display = 'flex';
 
+  const oppName = isOnline ? document.getElementById('c-name').innerText : "המחשב";
+
   let winnerText;
   if (uFinal > cFinal) winnerText = "🏆 ניצחת!";
-  else if (cFinal > uFinal) winnerText = `😞 ${isOnline ? document.getElementById('c-name').innerText : "המחשב"} ניצח`;
+  else if (cFinal > uFinal) winnerText = `😞 ${oppName} ניצח`;
   else winnerText = "🤝 תיקו!";
 
   txt.innerText = winnerText;
-  summary.innerHTML = `ניקוד שלך: <b>${uFinal}</b> <small style="opacity:0.7">(שולחן ${uTableScore} − יד ${uHandPenalty})</small><br>
-                       ניקוד יריב: <b>${cFinal}</b> <small style="opacity:0.7">(שולחן ${cTableScore} − יד ${cHandPenalty})</small>`;
+
+  const uResult = winnerBonus === 'user' ? '🏆 ניצחון' : (winnerBonus === 'comp' ? '😞 הפסד' : '🤝 תיקו');
+  const cResult = winnerBonus === 'comp' ? '🏆 ניצחון' : (winnerBonus === 'user' ? '😞 הפסד' : '🤝 תיקו');
+
+  summary.innerHTML = `
+    <div style="display:flex; gap:20px; justify-content:center; flex-wrap:wrap; margin-bottom:8px;">
+      <div style="background:rgba(255,255,255,0.07); border-radius:14px; padding:14px 22px; min-width:160px;">
+        <div style="font-size:1rem; opacity:0.7; margin-bottom:4px;">${userName}</div>
+        <div style="font-size:1.6rem; font-weight:900; color:${winnerBonus==='user'?'var(--gold)':'#ef9a9a'};">${uResult}</div>
+        <div style="font-size:1.1rem; margin-top:6px;"><b>${uFinal}</b> נק'</div>
+        <div style="font-size:0.75rem; opacity:0.55; margin-top:4px;">
+          שולחן: ${uTableScore} | יד: −${uHandPenalty}${uPenalty ? ` | קנס: −${uPenalty}` : ''}${winnerBonus==='user' ? ' | בונוס: +100' : ''}
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,0.07); border-radius:14px; padding:14px 22px; min-width:160px;">
+        <div style="font-size:1rem; opacity:0.7; margin-bottom:4px;">${oppName}</div>
+        <div style="font-size:1.6rem; font-weight:900; color:${winnerBonus==='comp'?'var(--gold)':'#ef9a9a'};">${cResult}</div>
+        <div style="font-size:1.1rem; margin-top:6px;"><b>${cFinal}</b> נק'</div>
+        <div style="font-size:0.75rem; opacity:0.55; margin-top:4px;">
+          שולחן: ${cTableScore} | יד: −${cHandPenalty}${cPenalty ? ` | קנס: −${cPenalty}` : ''}${winnerBonus==='comp' ? ' | בונוס: +100' : ''}
+        </div>
+      </div>
+    </div>`;
 
   if (isOnline) {
     db.ref('rooms/' + currentRoomId).update({
@@ -1851,6 +1891,8 @@ function render() {
   document.getElementById('p-score').innerText = u.table.reduce((s, m) => s + Utils.calcPoints(m), 0);
   document.getElementById('c-score').innerText = c.table.reduce((s, m) => s + Utils.calcPoints(m), 0);
   document.getElementById('c-count').innerText = c.hand.length;
+  const cCountDisplay = document.getElementById('c-count-display');
+  if (cCountDisplay) cCountDisplay.innerText = gameState.isDebug ? `(${c.hand.length} קלפים ביד)` : '';
   document.getElementById('deck-num').innerText = gameState.deck.length;
 
   // Hand count
